@@ -22,17 +22,24 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public record TeamSpeakTest(TeDiSync plugin) {
     public void initTeamSpeakBot() {
+        String host = plugin.getConfig().getString("teamspeak.login.host");
+        int virtualserverid = plugin.getConfig().getInt("teamspeak.login.virtual_server_id");
+        String query_username = plugin.getConfig().getString("teamspeak.login.query_username");
+        String query_password = plugin.getConfig().getString("teamspeak.login.query_password");
+        String query_displayname = plugin.getConfig().getString("teamspeak.login.query_displayname");
+
+
         final TS3Config config = new TS3Config();
-        config.setHost("127.0.0.1");
+        config.setHost(host);
         config.setEnableCommunicationsLogging(true);
 
         final TS3Query query = new TS3Query(config);
         query.connect();
 
         final TS3ApiAsync asyncApi = query.getAsyncApi();
-        asyncApi.login("test", "QDjzS+3p");
-        asyncApi.selectVirtualServerById(1);
-        asyncApi.setNickname("fanta's test Query");
+        asyncApi.login(query_username, query_password);
+        asyncApi.selectVirtualServerById(virtualserverid);
+        asyncApi.setNickname(query_displayname);
 
         asyncApi.registerAllEvents();
         asyncApi.addTS3Listeners(new TS3Listener() {
