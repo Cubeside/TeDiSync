@@ -1,4 +1,4 @@
-package de.fanta.tedisync;
+package de.fanta.tedisync.utils;
 
 public class LuckPermsUtils {
 

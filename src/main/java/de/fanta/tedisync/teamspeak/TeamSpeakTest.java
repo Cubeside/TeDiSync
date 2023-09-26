@@ -1,8 +1,9 @@
-package de.fanta.tedisync;
+package de.fanta.tedisync.teamspeak;
 
 import com.github.theholywaffle.teamspeak3.TS3ApiAsync;
 import com.github.theholywaffle.teamspeak3.TS3Config;
 import com.github.theholywaffle.teamspeak3.TS3Query;
+import com.github.theholywaffle.teamspeak3.api.event.BaseEvent;
 import com.github.theholywaffle.teamspeak3.api.event.ChannelCreateEvent;
 import com.github.theholywaffle.teamspeak3.api.event.ChannelDeletedEvent;
 import com.github.theholywaffle.teamspeak3.api.event.ChannelDescriptionEditedEvent;
@@ -14,8 +15,11 @@ import com.github.theholywaffle.teamspeak3.api.event.ClientLeaveEvent;
 import com.github.theholywaffle.teamspeak3.api.event.ClientMovedEvent;
 import com.github.theholywaffle.teamspeak3.api.event.PrivilegeKeyUsedEvent;
 import com.github.theholywaffle.teamspeak3.api.event.ServerEditedEvent;
+import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
+import com.github.theholywaffle.teamspeak3.api.event.TS3EventType;
 import com.github.theholywaffle.teamspeak3.api.event.TS3Listener;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
+import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.utils.ChatUtil;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -42,8 +46,7 @@ public record TeamSpeakTest(TeDiSync plugin) {
         asyncApi.setNickname(query_displayname);
 
         asyncApi.registerAllEvents();
-        asyncApi.addTS3Listeners(new TS3Listener() {
-
+        asyncApi.addTS3Listeners(new TS3EventAdapter() {
             @Override
             public void onTextMessage(TextMessageEvent e) {
                 String message = e.getMessage();
@@ -62,55 +65,9 @@ public record TeamSpeakTest(TeDiSync plugin) {
             }
 
             @Override
-            public void onClientLeave(ClientLeaveEvent e) {
-
-            }
-
-            @Override
-            public void onServerEdit(ServerEditedEvent e) {
-
-            }
-
-            @Override
-            public void onChannelEdit(ChannelEditedEvent e) {
-
-            }
-
-            @Override
-            public void onChannelDescriptionChanged(ChannelDescriptionEditedEvent e) {
-
-            }
-
-            @Override
             public void onClientMoved(ClientMovedEvent e) {
 
             }
-
-            @Override
-            public void onChannelCreate(ChannelCreateEvent e) {
-
-            }
-
-            @Override
-            public void onChannelDeleted(ChannelDeletedEvent e) {
-
-            }
-
-            @Override
-            public void onChannelMoved(ChannelMovedEvent e) {
-
-            }
-
-            @Override
-            public void onChannelPasswordChanged(ChannelPasswordChangedEvent e) {
-
-            }
-
-            @Override
-            public void onPrivilegeKeyUsed(PrivilegeKeyUsedEvent e) {
-
-            }
-
         });
     }
 }

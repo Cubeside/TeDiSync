@@ -2,3 +2,4 @@ name: TeDiSync
 version: '${project.version}'
 main: de.fanta.tedisync.TeDiSync
 description: TeamSpeak and Discord Rank Sync
+depends: [CubesideUtils, LuckPerms]
