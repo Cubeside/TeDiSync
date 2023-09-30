@@ -15,6 +15,7 @@ teamspeak:
 discord:
   enabled: false
   login_token: CHANGETHIS
+  giveawaychannel: CHANGETHIS
 
 
 

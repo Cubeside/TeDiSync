@@ -2,8 +2,6 @@ package de.fanta.tedisync;
 
 import de.fanta.tedisync.data.Database;
 import de.fanta.tedisync.discord.DiscordBot;
-import de.fanta.tedisync.discord.commands.DiscordCommandRegistration;
-import de.fanta.tedisync.discord.listeners.DiscordEventRegistration;
 import de.fanta.tedisync.listener.MainJoinListener;
 import de.fanta.tedisync.teamspeak.TeamSpeakTest;
 import de.fanta.tedisync.utils.ChatUtil;
@@ -86,6 +84,11 @@ public final class TeDiSync extends Plugin {
         InputStream defaultConfig = getClass().getClassLoader().getResourceAsStream("config.yml");
         getDataFolder().mkdirs();
         Files.copy(defaultConfig, config.toPath());
+    }
+
+    public boolean saveConfig() throws IOException {
+        ConfigurationProvider.getProvider(YamlConfiguration.class).save(getConfig(), new File(getDataFolder(), "config.yml"));
+        return true;
     }
 
     public Configuration getConfig() {
