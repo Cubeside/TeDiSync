@@ -1,6 +1,5 @@
 package de.fanta.tedisync.discord.commands;
 
-import de.fanta.tedisync.TeDiPlayer;
 import de.fanta.tedisync.discord.DiscordBot;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
@@ -29,8 +28,7 @@ public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
             if (DiscordBot.getRequests().containsKey(player.getUniqueId())) {
                 User user = DiscordBot.getRequests().get(player.getUniqueId());
 
-                TeDiPlayer teDiPlayer = new TeDiPlayer(player, user.getIdLong(), null);
-                if (teDiPlayer.saveToDatabase()) {
+                if (DiscordBot.saveUser(player.getUniqueId(), user.getIdLong())) {
                     ChatUtil.sendNormalMessage(player, "Anfrage wurde Angenommen.");
                     EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Anfrage angenommen");
                     embedBuilder.setColor(ChatUtil.GREEN.getColor());

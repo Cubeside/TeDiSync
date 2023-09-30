@@ -24,10 +24,12 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.config.Configuration;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class DiscordBot extends ListenerAdapter {
     private static JDA discordAPI;
@@ -35,6 +37,7 @@ public class DiscordBot extends ListenerAdapter {
     private static HashMap<UUID, User> requests;
     private static HashMap<String, Giveaway> giveaways;
     private static HashMap<UUID, String> userEditGiveaway;
+    private static HashMap<Long, UUID> userList;
 
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
@@ -48,6 +51,7 @@ public class DiscordBot extends ListenerAdapter {
         requests = new HashMap<>();
         giveaways = new HashMap<>();
         userEditGiveaway = new HashMap<>();
+        userList = new HashMap<>();
         loadGiveawaysFromConfig();
     }
 
@@ -74,6 +78,21 @@ public class DiscordBot extends ListenerAdapter {
         return null;
     }
 
+    public static boolean saveUser(UUID uuid, Long id) {
+        Configuration config = TeDiSync.getPlugin().getConfig();
+        config.set("discorduser." + id, uuid.toString());
+
+        try {
+            if (TeDiSync.getPlugin().saveConfig()) {
+                DiscordBot.getUserList().put(id, uuid);
+                return true;
+            }
+        } catch (IOException e) {
+            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "User could not be saved");
+            return false;
+        }
+        return false;
+    }
 
 
     @Override
@@ -135,7 +154,6 @@ public class DiscordBot extends ListenerAdapter {
                 }
 
                 if (giveaway.isEnterMultiple()) {
-                    plugin.getLogger().info(String.valueOf(isPastDay(giveaway.getLastEntry().get(event.getUser().getIdLong()))));
                     if (giveaway.getLastEntry().containsKey(event.getUser().getIdLong()) && !isPastDay(giveaway.getLastEntry().get(event.getUser().getIdLong()))) {
                         privateReplay(event, "Du hast dich heute schon für dieses Gewinnspiel eingetragen.", ChatUtil.RED.getColor());
                         return;
@@ -226,5 +244,18 @@ public class DiscordBot extends ListenerAdapter {
         long diff = System.currentTimeMillis() - timeInMs;
         long msDay = 24 * 60 * 60 * 1000;
         return diff > msDay;
+    }
+
+    public static HashMap<Long, UUID> getUserList() {
+        return userList;
+    }
+
+    public static Long getIDFromUUD(UUID uuid) {
+        for (Long id : userList.keySet()) {
+            if (userList.get(id).equals(uuid)) {
+                return id;
+            }
+        }
+        return null;
     }
 }

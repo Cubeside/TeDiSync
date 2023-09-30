@@ -3,10 +3,16 @@ package de.fanta.tedisync.discord.commands.giveaway;
 import de.fanta.tedisync.discord.DiscordBot;
 import de.fanta.tedisync.discord.Giveaway;
 import de.fanta.tedisync.utils.ChatUtil;
+import de.iani.cubesideutils.ComponentUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import net.dv8tion.jda.api.entities.User;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
@@ -33,8 +39,23 @@ public class TeDiSyncDiscordDrawRandom extends SubCommand {
             return true;
         }
 
+
         User user = DiscordBot.getDiscordAPI().retrieveUserById(giveaway.drawRandom()).complete();
-        ChatUtil.sendNormalMessage(player, "Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ")");
+        if (DiscordBot.getUserList().containsKey(user.getIdLong())) {
+            ClickEvent infoClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playerinfo " + DiscordBot.getUserList().get(user.getIdLong()));
+            HoverEvent infoHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Info"));
+
+            BaseComponent component = ComponentUtil.setColor("Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ")", ChatUtil.GREEN);
+
+            BaseComponent infoComponent = ComponentUtil.setColor(" \uD83D\uDEC8", ChatUtil.ORANGE);
+            infoComponent.setHoverEvent(infoHoverEvent);
+            infoComponent.setClickEvent(infoClickEvent);
+            component.addExtra(infoComponent);
+            ChatUtil.sendComponent(player, component);
+        } else {
+            ChatUtil.sendNormalMessage(player, "Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ")");
+        }
+
         return true;
     }
 
