@@ -42,11 +42,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.bstats</groupId>
-            <artifactId>bstats-bungeecord</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.theholywaffle</groupId>
             <artifactId>teamspeak3-api</artifactId>
             <version>1.4.0-SNAPSHOT</version>
@@ -86,7 +81,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <minimizeJar>true</minimizeJar>
+                            <finalName>${project.artifactId}</finalName>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -99,10 +94,6 @@
                             </filters>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <relocations>
-                                <relocation>
-                                    <pattern>org.bstats</pattern>
-                                    <shadedPattern>de.fanta.tedisync.libs.bstats</shadedPattern>
-                                </relocation>
                                 <relocation>
                                     <pattern>com.github.theholywaffle</pattern>
                                     <shadedPattern>de.fanta.tedisync.libs.com.github.theholywaffle</shadedPattern>

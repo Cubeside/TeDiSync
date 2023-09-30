@@ -40,8 +40,6 @@ public final class TeDiSync extends Plugin {
             throw new RuntimeException(e);
         }
 
-        new bStats(this).registerbStats();
-
         if (config.getBoolean("teamspeak.enabled")) {
             new TeamSpeakTest(this).initTeamSpeakBot();
         }

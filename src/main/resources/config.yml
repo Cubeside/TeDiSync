@@ -1,9 +1,3 @@
-database:
-  host: localhost
-  user: CHANGETHIS
-  password: CHANGETHIS
-  database: CHANGETHIS
-  tableprefix: tedisync
 teamspeak:
   enabled: false
   login:

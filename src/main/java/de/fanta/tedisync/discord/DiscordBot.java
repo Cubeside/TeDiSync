@@ -184,7 +184,6 @@ public class DiscordBot extends ListenerAdapter {
     private void loadGiveawaysFromConfig() {
         Configuration giveawayConfig = TeDiSync.getPlugin().getConfig().getSection("giveaways");
         for (String giveawayName : giveawayConfig.getKeys()) {
-            TeDiSync.getPlugin().getLogger().info(giveawayName);
             String name = giveawayConfig.getString(giveawayName + ".name");
             String message = giveawayConfig.getString(giveawayName + ".message");
             String title = giveawayConfig.getString(giveawayName + ".title");
