@@ -28,8 +28,8 @@ public final class TeDiSync extends Plugin {
         try {
             Class.forName(LuckPerms.class.getName());
         } catch (NoClassDefFoundError | ClassNotFoundException ex) {
-            plugin.getLogger().log(Level.SEVERE, "Without Luckperms this plugin will not work. Please install Luckperms and restart the server.");
-            plugin.getLogger().log(Level.SEVERE, "Shutdown.....");
+            plugin.getLogger().log(Level.SEVERE, "Without LuckPerms this plugin will not work. Please install LuckPerms and restart the server.");
+            plugin.getLogger().log(Level.SEVERE, "Shutting down.....");
             plugin.getProxy().stop();
         }
 

@@ -19,18 +19,18 @@ public class TeDiSyncDiscordSave extends SubCommand {
         }
 
         if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
-            ChatUtil.sendErrorMessage(player, "Du bearbeitest kein Gewinnspiel.");
+            ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
         Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
-            ChatUtil.sendErrorMessage(player, "Das Giveaway das du aktuell bearbeitest existiert nicht.");
+            ChatUtil.sendErrorMessage(player, "Das Gewinnspiel, welches du aktuell bearbeitest existiert nicht.");
             return true;
         }
 
 
         if (giveaway.saveToConfig()) {
-            ChatUtil.sendNormalMessage(player, "Das Gewinnspiel " + ChatUtil.BLUE + giveaway.getName() + ChatUtil.GREEN + " gespeichert.");
+            ChatUtil.sendNormalMessage(player, "Das Gewinnspiel " + ChatUtil.BLUE + giveaway.getName() + ChatUtil.GREEN + " wurde gespeichert.");
         } else {
             ChatUtil.sendErrorMessage(player, "Das Gewinnspiel konnte nicht gespeichert werden.");
         }

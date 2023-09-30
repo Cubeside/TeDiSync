@@ -24,12 +24,12 @@ public class TeDiSyncDiscordsetOpen extends SubCommand {
         }
 
         if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
-            ChatUtil.sendErrorMessage(player, "Du bearbeitest kein Gewinnspiel.");
+            ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
         Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
-            ChatUtil.sendErrorMessage(player, "Das Giveaway das du aktuell bearbeitest existiert nicht.");
+            ChatUtil.sendErrorMessage(player, "Das Giveaway, welches du aktuell bearbeitest existiert nicht.");
             return true;
         }
 
@@ -40,9 +40,9 @@ public class TeDiSyncDiscordsetOpen extends SubCommand {
             }
             if (giveaway.setOpen(true)) {
                 giveaway.sendGiveawayToDiscordChannel(player.getName());
-                ChatUtil.sendNormalMessage(player, "Gewinnspiel geöffnet und veröffentlicht.");
+                ChatUtil.sendNormalMessage(player, "Das Gewinnspiel wurde geöffnet und veröffentlicht.");
             } else {
-                ChatUtil.sendErrorMessage(player, "Gewinnspiel konnte nicht geöffnet werden.");
+                ChatUtil.sendErrorMessage(player, "Das Gewinnspiel konnte nicht geöffnet werden.");
             }
 
         } else {
@@ -52,9 +52,9 @@ public class TeDiSyncDiscordsetOpen extends SubCommand {
             }
             if (!giveaway.setOpen(false)) {
                 giveaway.deleteGiveawayFromDiscordChannel();
-                ChatUtil.sendNormalMessage(player, "Gewinnspiel geschlossen und aus dem Discord entfernt.");
+                ChatUtil.sendNormalMessage(player, "Das Gewinnspiel wurde geschlossen und aus dem Discord entfernt.");
             } else {
-                ChatUtil.sendErrorMessage(player, "Gewinnspiel konnte nicht geschlossen werden.");
+                ChatUtil.sendErrorMessage(player, "Das Gewinnspiel konnte nicht geschlossen werden.");
             }
         }
         giveaway.saveToConfig();

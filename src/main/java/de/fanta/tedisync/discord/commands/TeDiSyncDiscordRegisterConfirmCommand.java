@@ -29,10 +29,10 @@ public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
                 User user = DiscordBot.getRequests().get(player.getUniqueId());
 
                 if (DiscordBot.saveUser(player.getUniqueId(), user.getIdLong())) {
-                    ChatUtil.sendNormalMessage(player, "Anfrage wurde Angenommen.");
+                    ChatUtil.sendNormalMessage(player, "Die Anfrage wurde angenommen.");
                     EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Anfrage angenommen");
                     embedBuilder.setColor(ChatUtil.GREEN.getColor());
-                    embedBuilder.setDescription("Die anfrage zum Verbinden wurde von " + player.getName() + " angenommen.");
+                    embedBuilder.setDescription("Die Anfrage zum Verbinden wurde von " + player.getName() + " angenommen.");
                     user.openPrivateChannel().complete().sendMessageEmbeds(embedBuilder.build()).queue();
                 } else {
                     ChatUtil.sendErrorMessage(player, "Daten konnten nicht gespeichert werden.");
@@ -42,20 +42,20 @@ public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
                     user.openPrivateChannel().complete().sendMessageEmbeds(embedBuilder.build()).queue();
                 }
             } else {
-                ChatUtil.sendErrorMessage(player, "Du hast keine Anfrage");
+                ChatUtil.sendErrorMessage(player, "Du hast momentan keine Anfrage.");
             }
         } else {
             if (DiscordBot.getRequests().containsKey(player.getUniqueId())) {
                 User user = DiscordBot.getRequests().get(player.getUniqueId());
                 DiscordBot.getRequests().remove(player.getUniqueId());
-                ChatUtil.sendNormalMessage(player, "Anfrage wurde Abgelehnt");
+                ChatUtil.sendNormalMessage(player, "Die Anfrage wurde abgelehnt.");
 
                 EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Anfrage abgelehnt");
                 embedBuilder.setColor(ChatUtil.RED.getColor());
-                embedBuilder.setDescription("Die anfrage zum Verbinden wurde von " + player.getName() + " abgelehnt.");
+                embedBuilder.setDescription("Die Anfrage zum Verbinden wurde von " + player.getName() + " abgelehnt.");
                 user.openPrivateChannel().complete().sendMessageEmbeds(embedBuilder.build()).queue();
             } else {
-                ChatUtil.sendErrorMessage(player, "Du hast keine Anfrage");
+                ChatUtil.sendErrorMessage(player, "Du hast momentan keine Anfrage.");
             }
         }
         return true;

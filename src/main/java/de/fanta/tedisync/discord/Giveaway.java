@@ -179,7 +179,7 @@ public class Giveaway {
                 return true;
             }
         } catch (IOException e) {
-            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway could not be saved");
+            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway could not be saved.");
             return false;
         }
         return false;
@@ -195,7 +195,7 @@ public class Giveaway {
                 return true;
             }
         } catch (IOException e) {
-            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway could not be deleted");
+            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway could not be deleted.");
             return false;
         }
         return false;

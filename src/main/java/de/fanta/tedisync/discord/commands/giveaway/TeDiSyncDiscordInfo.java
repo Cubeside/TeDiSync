@@ -20,20 +20,20 @@ public class TeDiSyncDiscordInfo extends SubCommand {
         }
 
         if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
-            ChatUtil.sendErrorMessage(player, "Du bearbeitest kein Gewinnspiel.");
+            ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
         Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
-            ChatUtil.sendErrorMessage(player, "Das Giveaway das du aktuell bearbeitest existiert nicht.");
+            ChatUtil.sendErrorMessage(player, "Das Gewinnspiel, welches du aktuell bearbeitest existiert nicht.");
             return true;
         }
 
         ChatUtil.sendNormalMessage(player, ChatUtil.GREEN.toString() + ChatColor.BOLD + ChatColor.UNDERLINE + "--- Giveaway-Info zu " + giveaway.getName() + " ---");
         ChatUtil.sendNormalMessage(player, "Name: " + ChatUtil.BLUE + giveaway.getName());
         ChatUtil.sendNormalMessage(player, "Nachricht: " + (giveaway.getMessage() != null ? ChatUtil.BLUE + giveaway.getMessage() : ChatUtil.ORANGE + "NULL"));
-        ChatUtil.sendNormalMessage(player, "Title: " + (giveaway.getTitle() != null ? ChatUtil.BLUE + giveaway.getTitle() : ChatUtil.ORANGE + "NULL"));
-        ChatUtil.sendNormalMessage(player, "Knopf Text: " + (giveaway.getButtonText() != null ? ChatUtil.BLUE + giveaway.getButtonText() : ChatUtil.ORANGE + "NULL"));
+        ChatUtil.sendNormalMessage(player, "Titel: " + (giveaway.getTitle() != null ? ChatUtil.BLUE + giveaway.getTitle() : ChatUtil.ORANGE + "NULL"));
+        ChatUtil.sendNormalMessage(player, "Knopf-Text: " + (giveaway.getButtonText() != null ? ChatUtil.BLUE + giveaway.getButtonText() : ChatUtil.ORANGE + "NULL"));
         ChatUtil.sendNormalMessage(player, "Farbe: " + (giveaway.getChatColor() != null ? ChatColor.of(giveaway.getChatColor()) + giveaway.getChatColor() : ChatUtil.ORANGE + "NULL"));
         ChatUtil.sendNormalMessage(player, "Mehrfach eintragen: " + (giveaway.isEnterMultiple() ? ChatUtil.GREEN : ChatUtil.RED) + giveaway.isEnterMultiple());
         ChatUtil.sendNormalMessage(player, "Geöffnet: " + (giveaway.isOpen() ? ChatUtil.GREEN : ChatUtil.RED) + giveaway.isOpen());

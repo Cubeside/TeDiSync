@@ -19,22 +19,22 @@ public class TeDiSyncDiscordSetTitle extends SubCommand {
         }
 
         if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
-            ChatUtil.sendErrorMessage(player, "Du bearbeitest kein Gewinnspiel.");
+            ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
         Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
-            ChatUtil.sendErrorMessage(player, "Das Giveaway das du aktuell bearbeitest existiert nicht.");
+            ChatUtil.sendErrorMessage(player, "Das Gewinnspiel, welches du aktuell bearbeitest existiert nicht.");
             return true;
         }
 
         if (!args.hasNext()) {
-            ChatUtil.sendErrorMessage(player, "Du musst einen Gewinnspiel Title angeben.");
+            ChatUtil.sendErrorMessage(player, "Du musst einen Titel für das Gewinnspiel angeben.");
             return true;
         }
 
         giveaway.setTitle(args.getAll(null));
-        ChatUtil.sendNormalMessage(player, "Du hast denn Gewinnspiel Title hinzugefügt.");
+        ChatUtil.sendNormalMessage(player, "Du hast einen Titel für das Gewinnspiel hinzugefügt.");
         return true;
     }
 

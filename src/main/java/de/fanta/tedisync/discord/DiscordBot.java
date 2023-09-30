@@ -109,11 +109,11 @@ public class DiscordBot extends ListenerAdapter {
             if (proxiedPlayer == null || !proxiedPlayer.isConnected()) {
                 EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Fehler");
                 embedBuilder.setColor(ChatUtil.RED.getColor());
-                embedBuilder.setDescription("Der Spieler " + playerName + " ist nicht Online.");
+                embedBuilder.setDescription("Der Spieler " + playerName + " ist nicht online.");
                 privateChannel.sendMessageEmbeds(embedBuilder.build()).submit();
             } else {
                 requests.put(proxiedPlayer.getUniqueId(), author);
-                ChatUtil.sendNormalMessage(proxiedPlayer, "Möchtest du das Discord Konto " + ChatUtil.BLUE + author.getEffectiveName() + "(" + author.getName() + ")" + ChatUtil.GREEN + " mit Minecraft verbinden?");
+                ChatUtil.sendNormalMessage(proxiedPlayer, "Möchtest du das Discord-Konto " + ChatUtil.BLUE + author.getEffectiveName() + "(" + author.getName() + ")" + ChatUtil.GREEN + " mit Minecraft verbinden?");
 
                 ClickEvent acceptClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/discord register accept");
                 HoverEvent acceptHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Annehmen"));
@@ -138,7 +138,7 @@ public class DiscordBot extends ListenerAdapter {
 
                 EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Anfrage gesendet");
                 embedBuilder.setColor(ChatUtil.GREEN.getColor());
-                embedBuilder.setDescription("Eine anfrage zum Verbinden wurde an " + playerName + " in Minecraft geschickt.");
+                embedBuilder.setDescription("Eine Anfrage zum Verbinden wurde in Minecraft an " + playerName + " geschickt.");
                 privateChannel.sendMessageEmbeds(embedBuilder.build()).queue();
             }
         }
@@ -149,7 +149,7 @@ public class DiscordBot extends ListenerAdapter {
         for (Giveaway giveaway : giveaways.values()) {
             if (giveaway.getName().equals(event.getComponentId())) {
                 if (!giveaway.isOpen()) {
-                    privateReplay(event, "Das Gewinnspiel ist nicht geöffnet.", ChatUtil.ORANGE.getColor());
+                    privateReplay(event, "Das Gewinnspiel ist momentan nicht geöffnet.", ChatUtil.ORANGE.getColor());
                     return;
                 }
 
@@ -160,7 +160,7 @@ public class DiscordBot extends ListenerAdapter {
                     }
                 } else {
                     if (giveaway.getEntryList().containsKey(event.getUser().getIdLong())) {
-                        privateReplay(event, "Du kannst dich für dieses Gewinnspiel nur einmal eintragen.", ChatUtil.RED.getColor());
+                        privateReplay(event, "Du kannst dich für dieses Gewinnspiel nur ein Mal eintragen.", ChatUtil.RED.getColor());
                         return;
                     }
                 }

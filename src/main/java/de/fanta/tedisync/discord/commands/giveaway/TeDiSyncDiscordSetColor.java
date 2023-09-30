@@ -20,23 +20,23 @@ public class TeDiSyncDiscordSetColor extends SubCommand {
         }
 
         if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
-            ChatUtil.sendErrorMessage(player, "Du bearbeitest kein Gewinnspiel.");
+            ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
         Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
-            ChatUtil.sendErrorMessage(player, "Das Giveaway das du aktuell bearbeitest existiert nicht.");
+            ChatUtil.sendErrorMessage(player, "Das Gewinnspiel, welches du aktuell bearbeitest existiert nicht.");
             return true;
         }
 
         if (!args.hasNext()) {
-            ChatUtil.sendErrorMessage(player, "Du musst eine Gewinnspiel Farbe angeben.");
+            ChatUtil.sendErrorMessage(player, "Du musst eine Farbe für das Gewinnspiel angeben.");
             return true;
         }
 
         String colorText = args.getNext();
         if (!colorText.startsWith("#")) {
-            ChatUtil.sendErrorMessage(player, "Die farbe muss als Hex angegeben werden. (#FFFFFF)");
+            ChatUtil.sendErrorMessage(player, "Die Farbe muss als Hex angegeben werden. (#FFFFFF)");
             return true;
         }
         try {
@@ -48,7 +48,7 @@ public class TeDiSyncDiscordSetColor extends SubCommand {
 
 
         giveaway.setChatColor(colorText);
-        ChatUtil.sendNormalMessage(player, "Du hast die Gewinnspiel Farbe hinzugefügt.");
+        ChatUtil.sendNormalMessage(player, "Du hast eine Farbe für das Gewinnspiel hinzugefügt.");
         return true;
     }
 

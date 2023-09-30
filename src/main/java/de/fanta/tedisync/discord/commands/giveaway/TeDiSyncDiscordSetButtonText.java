@@ -19,22 +19,22 @@ public class TeDiSyncDiscordSetButtonText extends SubCommand {
         }
 
         if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
-            ChatUtil.sendErrorMessage(player, "Du bearbeitest kein Gewinnspiel.");
+            ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
         Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
-            ChatUtil.sendErrorMessage(player, "Das Giveaway das du aktuell bearbeitest existiert nicht.");
+            ChatUtil.sendErrorMessage(player, "Das Gewinnspiel, welches du aktuell bearbeitest existiert nicht.");
             return true;
         }
 
         if (!args.hasNext()) {
-            ChatUtil.sendErrorMessage(player, "Du musst einen Knopf Text angeben.");
+            ChatUtil.sendErrorMessage(player, "Du musst einen Text für den Knopf angeben.");
             return true;
         }
 
         giveaway.setButtonText(args.getAll(null));
-        ChatUtil.sendNormalMessage(player, "Du hast denn Knopf Text hinzugefügt.");
+        ChatUtil.sendNormalMessage(player, "Du hast einen Text für den Knopf hinzugefügt.");
         return true;
     }
 

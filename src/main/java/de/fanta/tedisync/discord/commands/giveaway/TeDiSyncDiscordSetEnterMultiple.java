@@ -25,17 +25,17 @@ public class TeDiSyncDiscordSetEnterMultiple extends SubCommand {
         }
 
         if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
-            ChatUtil.sendErrorMessage(player, "Du bearbeitest kein Gewinnspiel.");
+            ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
         Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
-            ChatUtil.sendErrorMessage(player, "Das Giveaway das du aktuell bearbeitest existiert nicht.");
+            ChatUtil.sendErrorMessage(player, "Das Gewinnspiel, welches du aktuell bearbeitest existiert nicht.");
             return true;
         }
 
         giveaway.setEnterMultiple(enterMultiple);
-        ChatUtil.sendNormalMessage(player, enterMultiple ? "User können sich jetzt mehrfach eintragen." : "User können sich jetzt nur einmal eintrage.");
+        ChatUtil.sendNormalMessage(player, enterMultiple ? "User können sich nun mehrfach eintragen." : "User können sich nun nur ein Mal eintragen.");
         return true;
     }
 
