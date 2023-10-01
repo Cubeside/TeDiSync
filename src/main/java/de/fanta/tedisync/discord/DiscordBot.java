@@ -2,7 +2,6 @@ package de.fanta.tedisync.discord;
 
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.discord.commands.DiscordCommandRegistration;
-import de.fanta.tedisync.discord.listeners.DiscordEventRegistration;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -26,6 +25,7 @@ import net.md_5.bungee.config.Configuration;
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -37,12 +37,11 @@ public class DiscordBot extends ListenerAdapter {
     private static HashMap<UUID, User> requests;
     private static HashMap<String, Giveaway> giveaways;
     private static HashMap<UUID, String> userEditGiveaway;
-    private static HashMap<Long, UUID> userList;
+    private static HashMap<Long, UUID> discordIdToUUID;
 
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
         new DiscordCommandRegistration(plugin).registerCommands();
-        new DiscordEventRegistration(plugin).registerEvents();
 
         plugin.getLogger().info("Login DiscordBot...");
         discordAPI = JDABuilder.createDefault(plugin.getConfig().getString("discord.login_token")).enableIntents(GatewayIntent.MESSAGE_CONTENT).build();
@@ -51,7 +50,12 @@ public class DiscordBot extends ListenerAdapter {
         requests = new HashMap<>();
         giveaways = new HashMap<>();
         userEditGiveaway = new HashMap<>();
-        userList = new HashMap<>();
+        discordIdToUUID = new HashMap<>();
+
+        Configuration config = TeDiSync.getPlugin().getConfig().getSection("discorduser");
+        for (String id : config.getKeys()) {
+            discordIdToUUID.put(Long.valueOf(id), UUID.fromString(config.getString(id)));
+        }
         loadGiveawaysFromConfig();
     }
 
@@ -71,20 +75,13 @@ public class DiscordBot extends ListenerAdapter {
         return discordAPI;
     }
 
-    public static User getDiscordUser(long id) {
-        if (discordAPI != null) {
-            return discordAPI.retrieveUserById(id).complete();
-        }
-        return null;
-    }
-
     public static boolean saveUser(UUID uuid, Long id) {
         Configuration config = TeDiSync.getPlugin().getConfig();
         config.set("discorduser." + id, uuid.toString());
 
         try {
             if (TeDiSync.getPlugin().saveConfig()) {
-                DiscordBot.getUserList().put(id, uuid);
+                DiscordBot.getDiscordIdToUUID().put(id, uuid);
                 return true;
             }
         } catch (IOException e) {
@@ -154,7 +151,7 @@ public class DiscordBot extends ListenerAdapter {
                 }
 
                 if (giveaway.isEnterMultiple()) {
-                    if (giveaway.getLastEntry().containsKey(event.getUser().getIdLong()) && !isPastDay(giveaway.getLastEntry().get(event.getUser().getIdLong()))) {
+                    if (giveaway.getLastEntry().containsKey(event.getUser().getIdLong()) && isCurrentDay(giveaway.getLastEntry().get(event.getUser().getIdLong()))) {
                         privateReplay(event, "Du hast dich heute schon für dieses Gewinnspiel eingetragen.", ChatUtil.RED.getColor());
                         return;
                     }
@@ -239,22 +236,20 @@ public class DiscordBot extends ListenerAdapter {
         return listData;
     }
 
-    public static boolean isPastDay(long timeInMs) {
-        long diff = System.currentTimeMillis() - timeInMs;
-        long msDay = 24 * 60 * 60 * 1000;
-        return diff > msDay;
+    public static boolean isCurrentDay(long zeitInMs) {
+        Calendar lastEntry = Calendar.getInstance();
+        lastEntry.setTimeInMillis(zeitInMs);
+
+        Calendar currentDay = Calendar.getInstance();
+        boolean sameDay = currentDay.get(Calendar.DAY_OF_MONTH) == lastEntry.get(Calendar.DAY_OF_MONTH);
+        boolean sameMonth = currentDay.get(Calendar.MONTH) == lastEntry.get(Calendar.MONTH);
+        boolean sameYear = currentDay.get(Calendar.YEAR) == lastEntry.get(Calendar.YEAR);
+
+        return sameDay && sameMonth && sameYear;
     }
 
-    public static HashMap<Long, UUID> getUserList() {
-        return userList;
-    }
 
-    public static Long getIDFromUUD(UUID uuid) {
-        for (Long id : userList.keySet()) {
-            if (userList.get(id).equals(uuid)) {
-                return id;
-            }
-        }
-        return null;
+    public static HashMap<Long, UUID> getDiscordIdToUUID() {
+        return discordIdToUUID;
     }
 }

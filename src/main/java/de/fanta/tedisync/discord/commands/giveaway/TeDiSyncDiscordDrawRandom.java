@@ -7,7 +7,6 @@ import de.iani.cubesideutils.ComponentUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
 import net.dv8tion.jda.api.entities.User;
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -41,8 +40,8 @@ public class TeDiSyncDiscordDrawRandom extends SubCommand {
 
 
         User user = DiscordBot.getDiscordAPI().retrieveUserById(giveaway.drawRandom()).complete();
-        if (DiscordBot.getUserList().containsKey(user.getIdLong())) {
-            ClickEvent infoClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playerinfo " + DiscordBot.getUserList().get(user.getIdLong()));
+        if (DiscordBot.getDiscordIdToUUID().containsKey(user.getIdLong())) {
+            ClickEvent infoClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playerinfo " + DiscordBot.getDiscordIdToUUID().get(user.getIdLong()));
             HoverEvent infoHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Info"));
 
             BaseComponent component = ComponentUtil.setColor("Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ")", ChatUtil.GREEN);
