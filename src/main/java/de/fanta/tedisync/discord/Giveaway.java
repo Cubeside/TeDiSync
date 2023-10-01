@@ -201,13 +201,12 @@ public class Giveaway {
         return false;
     }
 
-    public void sendGiveawayToDiscordChannel(String author) {
+    public void sendGiveawayToDiscordChannel() {
         MessageChannel channel = DiscordBot.getDiscordAPI().getTextChannelById(TeDiSync.getPlugin().getConfig().getLong("discord.giveawaychannel"));
         if (channel != null) {
             EmbedBuilder embedBuilder = new EmbedBuilder().setTitle(title);
             embedBuilder.setColor(ChatColor.of(chatColor).getColor());
             embedBuilder.setDescription(message);
-            embedBuilder.setAuthor(author);
             try {
                 Message gm = channel.sendMessageEmbeds(embedBuilder.build()).addActionRow(Button.primary(name, buttonText)).submit().get();
                 this.setMessageID(gm.getIdLong());

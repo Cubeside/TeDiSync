@@ -39,7 +39,7 @@ public class TeDiSyncDiscordsetOpen extends SubCommand {
                 return true;
             }
             if (giveaway.setOpen(true)) {
-                giveaway.sendGiveawayToDiscordChannel(player.getName());
+                giveaway.sendGiveawayToDiscordChannel();
                 ChatUtil.sendNormalMessage(player, "Das Gewinnspiel wurde geöffnet und veröffentlicht.");
             } else {
                 ChatUtil.sendErrorMessage(player, "Das Gewinnspiel konnte nicht geöffnet werden.");
