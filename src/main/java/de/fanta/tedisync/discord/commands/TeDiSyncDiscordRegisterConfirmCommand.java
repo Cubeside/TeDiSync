@@ -24,10 +24,9 @@ public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
             return true;
         }
 
+        User user = DiscordBot.getRequests().get(player.getUniqueId());
         if (confirm) {
             if (DiscordBot.getRequests().containsKey(player.getUniqueId())) {
-                User user = DiscordBot.getRequests().get(player.getUniqueId());
-
                 if (DiscordBot.saveUser(player.getUniqueId(), user.getIdLong())) {
                     ChatUtil.sendNormalMessage(player, "Die Anfrage wurde angenommen.");
                     EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Anfrage angenommen");
@@ -46,7 +45,6 @@ public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
             }
         } else {
             if (DiscordBot.getRequests().containsKey(player.getUniqueId())) {
-                User user = DiscordBot.getRequests().get(player.getUniqueId());
                 DiscordBot.getRequests().remove(player.getUniqueId());
                 ChatUtil.sendNormalMessage(player, "Die Anfrage wurde abgelehnt.");
 

@@ -230,4 +230,12 @@ public class Giveaway {
             }
         }
     }
+
+    public int countEntries() {
+        int count = 0;
+        for (Integer entries : entryList.values()) {
+            count += entries;
+        }
+        return count;
+    }
 }

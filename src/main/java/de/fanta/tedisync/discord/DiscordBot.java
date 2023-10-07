@@ -7,12 +7,16 @@ import de.iani.cubesideutils.ComponentUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.components.ActionRow;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.interactions.components.text.TextInput;
+import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
+import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -22,6 +26,7 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.config.Configuration;
 
+import javax.annotation.Nonnull;
 import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -91,23 +96,54 @@ public class DiscordBot extends ListenerAdapter {
         return false;
     }
 
-
     @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
-        if (event.getAuthor().isBot()) {
+    public void onButtonInteraction(ButtonInteractionEvent event) {
+        if (event.getComponentId().equals("TeDiSync-Register")) {
+            TextInput nameTextField = TextInput.create("TeDiSync-MinecraftName", "Minecraft-Name", TextInputStyle.SHORT).setPlaceholder("Minecraft Name").setRequiredRange(1, 16).setRequired(true).build();
+            Modal modal = Modal.create("TeDiSync-Register", "Registrieren").addComponents(ActionRow.of(nameTextField)).build();
+            event.replyModal(modal).queue();
             return;
         }
-        User author = event.getAuthor();
-        Message message = event.getMessage();
-        if (event.getChannel() instanceof PrivateChannel privateChannel) {
-            plugin.getLogger().info("Private from: " + author.getEffectiveName() + "(" + author.getName() + ")" + ": " + message.getContentRaw());
-            String playerName = message.getContentRaw();
+        for (Giveaway giveaway : giveaways.values()) {
+            if (giveaway.getName().equals(event.getComponentId())) {
+                if (!giveaway.isOpen()) {
+                    privateReplay(event, "Das Gewinnspiel ist momentan nicht geöffnet.", ChatUtil.ORANGE.getColor());
+                    return;
+                }
+
+                if (giveaway.isEnterMultiple()) {
+                    if (giveaway.getLastEntry().containsKey(event.getUser().getIdLong()) && isCurrentDay(giveaway.getLastEntry().get(event.getUser().getIdLong()))) {
+                        privateReplay(event, "Du hast dich heute schon für dieses Gewinnspiel eingetragen.", ChatUtil.RED.getColor());
+                        return;
+                    }
+                } else {
+                    if (giveaway.getEntryList().containsKey(event.getUser().getIdLong())) {
+                        privateReplay(event, "Du kannst dich für dieses Gewinnspiel nur ein Mal eintragen.", ChatUtil.RED.getColor());
+                        return;
+                    }
+                }
+
+                if (giveaway.countUp(event.getUser().getIdLong())) {
+                    privateReplay(event, "Du hast dich für das Gewinnspiel eingetragen." + (giveaway.getEntryCount(event.getIdLong()) > 1 ? "Du bist jetzt " + giveaway.getEntryCount(event.getIdLong()) + "x für das Gewinnspiel eingetragen." : ""), ChatUtil.GREEN.getColor());
+                } else {
+                    privateReplay(event, "Es ist ein Fehler aufgetreten.", ChatUtil.RED.getColor());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onModalInteraction(@Nonnull ModalInteractionEvent event) {
+        if (event.getModalId().equals("TeDiSync-Register")) {
+            User author = event.getUser();
+            String playerName = event.getValue("TeDiSync-MinecraftName").getAsString();
+
             ProxiedPlayer proxiedPlayer = plugin.getProxy().getPlayer(playerName);
             if (proxiedPlayer == null || !proxiedPlayer.isConnected()) {
                 EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Fehler");
                 embedBuilder.setColor(ChatUtil.RED.getColor());
                 embedBuilder.setDescription("Der Spieler " + playerName + " ist nicht online.");
-                privateChannel.sendMessageEmbeds(embedBuilder.build()).submit();
+                event.reply("").setEmbeds(embedBuilder.build()).setEphemeral(true).queue();
             } else {
                 requests.put(proxiedPlayer.getUniqueId(), author);
                 ChatUtil.sendNormalMessage(proxiedPlayer, "Möchtest du das Discord-Konto " + ChatUtil.BLUE + author.getEffectiveName() + "(" + author.getName() + ")" + ChatUtil.GREEN + " mit Minecraft verbinden?");
@@ -136,37 +172,7 @@ public class DiscordBot extends ListenerAdapter {
                 EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Anfrage gesendet");
                 embedBuilder.setColor(ChatUtil.GREEN.getColor());
                 embedBuilder.setDescription("Eine Anfrage zum Verbinden wurde in Minecraft an " + playerName + " geschickt.");
-                privateChannel.sendMessageEmbeds(embedBuilder.build()).queue();
-            }
-        }
-    }
-
-    @Override
-    public void onButtonInteraction(ButtonInteractionEvent event) {
-        for (Giveaway giveaway : giveaways.values()) {
-            if (giveaway.getName().equals(event.getComponentId())) {
-                if (!giveaway.isOpen()) {
-                    privateReplay(event, "Das Gewinnspiel ist momentan nicht geöffnet.", ChatUtil.ORANGE.getColor());
-                    return;
-                }
-
-                if (giveaway.isEnterMultiple()) {
-                    if (giveaway.getLastEntry().containsKey(event.getUser().getIdLong()) && isCurrentDay(giveaway.getLastEntry().get(event.getUser().getIdLong()))) {
-                        privateReplay(event, "Du hast dich heute schon für dieses Gewinnspiel eingetragen.", ChatUtil.RED.getColor());
-                        return;
-                    }
-                } else {
-                    if (giveaway.getEntryList().containsKey(event.getUser().getIdLong())) {
-                        privateReplay(event, "Du kannst dich für dieses Gewinnspiel nur ein Mal eintragen.", ChatUtil.RED.getColor());
-                        return;
-                    }
-                }
-
-                if (giveaway.countUp(event.getUser().getIdLong())) {
-                    privateReplay(event, "Du hast dich für das Gewinnspiel eingetragen.", ChatUtil.GREEN.getColor());
-                } else {
-                    privateReplay(event, "Es ist ein Fehler aufgetreten.", ChatUtil.RED.getColor());
-                }
+                event.reply("").setEmbeds(embedBuilder.build()).setEphemeral(true).queue();
             }
         }
     }
@@ -236,9 +242,9 @@ public class DiscordBot extends ListenerAdapter {
         return listData;
     }
 
-    public static boolean isCurrentDay(long zeitInMs) {
+    public static boolean isCurrentDay(long timeInMs) {
         Calendar lastEntry = Calendar.getInstance();
-        lastEntry.setTimeInMillis(zeitInMs);
+        lastEntry.setTimeInMillis(timeInMs);
 
         Calendar currentDay = Calendar.getInstance();
         boolean sameDay = currentDay.get(Calendar.DAY_OF_MONTH) == lastEntry.get(Calendar.DAY_OF_MONTH);
@@ -248,8 +254,14 @@ public class DiscordBot extends ListenerAdapter {
         return sameDay && sameMonth && sameYear;
     }
 
-
     public static HashMap<Long, UUID> getDiscordIdToUUID() {
         return discordIdToUUID;
+    }
+
+    public static void sendRegisterMessage(TextChannel channel) {
+        EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Registrieren");
+        embedBuilder.setColor(ChatUtil.GREEN.getColor());
+        embedBuilder.setDescription("Du kannst deinen Account mit deinem Minecraft-Account verknüpfen, damit dein Rang im Discord automatisch gesetzt werden kann und auch andere zusätzliche Funktionen für dich nutzbar sind.");
+        channel.sendMessageEmbeds(embedBuilder.build()).addActionRow(Button.success("TeDiSync-Register", "Registrieren")).submit();
     }
 }

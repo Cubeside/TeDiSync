@@ -10,6 +10,8 @@ import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.util.Collection;
+
 public class TeDiSyncDiscordInfo extends SubCommand {
 
     @Override
@@ -19,11 +21,12 @@ public class TeDiSyncDiscordInfo extends SubCommand {
             return false;
         }
 
-        if (!DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
+        if (!args.hasNext() && !DiscordBot.getUserEditGiveaway().containsKey(player.getUniqueId())) {
             ChatUtil.sendErrorMessage(player, "Du bearbeitest momentan kein Gewinnspiel.");
             return true;
         }
-        Giveaway giveaway = DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
+
+        Giveaway giveaway = args.hasNext() ? DiscordBot.getGiveaways().get(args.getNext().toLowerCase()) : DiscordBot.getGiveaways().get(DiscordBot.getUserEditGiveaway().get(player.getUniqueId()));
         if (giveaway == null) {
             ChatUtil.sendErrorMessage(player, "Das Gewinnspiel, welches du aktuell bearbeitest existiert nicht.");
             return true;
@@ -39,7 +42,15 @@ public class TeDiSyncDiscordInfo extends SubCommand {
         ChatUtil.sendNormalMessage(player, "Geöffnet: " + (giveaway.isOpen() ? ChatUtil.GREEN : ChatUtil.RED) + giveaway.isOpen());
         ChatUtil.sendNormalMessage(player, "");
         ChatUtil.sendNormalMessage(player, "Erfüllt Mindestvoraussetzung: " + (giveaway.canOpen() ? ChatUtil.GREEN : ChatUtil.RED) + giveaway.canOpen());
+        ChatUtil.sendNormalMessage(player, "");
+        ChatUtil.sendNormalMessage(player, "Teilnehmer: " + ChatUtil.BLUE + giveaway.getEntryList().size());
+        ChatUtil.sendNormalMessage(player, "Teilnahmen: " + ChatUtil.BLUE + giveaway.countEntries());
         return true;
+    }
+
+    @Override
+    public Collection<String> onTabComplete(CommandSender sender, Command command, String alias, ArgsParser args) {
+        return DiscordBot.getGiveaways().keySet();
     }
 
     @Override

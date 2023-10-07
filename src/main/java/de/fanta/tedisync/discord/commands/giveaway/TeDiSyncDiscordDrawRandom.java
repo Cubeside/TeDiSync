@@ -38,13 +38,12 @@ public class TeDiSyncDiscordDrawRandom extends SubCommand {
             return true;
         }
 
-
         User user = DiscordBot.getDiscordAPI().retrieveUserById(giveaway.drawRandom()).complete();
         if (DiscordBot.getDiscordIdToUUID().containsKey(user.getIdLong())) {
             ClickEvent infoClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playerinfo " + DiscordBot.getDiscordIdToUUID().get(user.getIdLong()));
             HoverEvent infoHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Info"));
 
-            BaseComponent component = ComponentUtil.setColor("Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ")", ChatUtil.GREEN);
+            BaseComponent component = ComponentUtil.setColor("Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ") " + "Lose: " + giveaway.getEntryCount(user.getIdLong()), ChatUtil.GREEN);
 
             BaseComponent infoComponent = ComponentUtil.setColor(" \uD83D\uDEC8", ChatUtil.ORANGE);
             infoComponent.setHoverEvent(infoHoverEvent);
@@ -52,7 +51,7 @@ public class TeDiSyncDiscordDrawRandom extends SubCommand {
             component.addExtra(infoComponent);
             ChatUtil.sendComponent(player, component);
         } else {
-            ChatUtil.sendNormalMessage(player, "Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ")");
+            ChatUtil.sendNormalMessage(player, "Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ") " + "Lose: " + giveaway.getEntryCount(user.getIdLong()));
         }
 
         return true;
