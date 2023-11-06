@@ -47,7 +47,6 @@ public final class TeDiSync extends Plugin {
         if (config.getBoolean("discord.enabled")) {
             new DiscordBot(this);
         }
-
     }
 
     @Override

@@ -2,20 +2,27 @@ package de.fanta.tedisync.discord;
 
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.utils.RandomCollection;
+import de.iani.cubesideutils.StringUtil;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.config.Configuration;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
 public class Giveaway {
     private final String name;
+    private String notificationButton;
     private String message;
     private String title;
     private String buttonText;
@@ -24,9 +31,10 @@ public class Giveaway {
     private boolean open = false;
     private HashMap<Long, Integer> entryList = new HashMap<>();
     private HashMap<Long, Long> lastEntry = new HashMap<>();
+    private Collection<UUID> playerNotificationList = new ArrayList<>();
     private long messageID;
 
-    public Giveaway(String name, String message, String title, String buttonText, String chatColor, boolean enterMultiple, HashMap<Long, Integer> entryList, HashMap<Long, Long> lastEntry) {
+    public Giveaway(String name, String message, String title, String buttonText, String chatColor, boolean enterMultiple, HashMap<Long, Integer> entryList, HashMap<Long, Long> lastEntry, Collection<UUID> playerNotificationList) {
         this.name = name;
         this.message = message;
         this.title = title;
@@ -35,6 +43,8 @@ public class Giveaway {
         this.enterMultiple = enterMultiple;
         this.entryList = entryList;
         this.lastEntry = lastEntry;
+        this.playerNotificationList.addAll(playerNotificationList);
+        this.notificationButton = name + "_Notification";
     }
 
     public Giveaway(String name, String message, String title, String buttonText, String chatColor, boolean enterMultiple) {
@@ -44,10 +54,12 @@ public class Giveaway {
         this.buttonText = buttonText;
         this.chatColor = chatColor;
         this.enterMultiple = enterMultiple;
+        this.notificationButton = name + "_Notification";
     }
 
     public Giveaway(String name) {
         this.name = name;
+        this.notificationButton = name + "_Notification";
     }
 
     public String getName() {
@@ -94,6 +106,10 @@ public class Giveaway {
         this.enterMultiple = enterMultiple;
     }
 
+    public String getNotificationButton() {
+        return notificationButton;
+    }
+
     public boolean isOpen() {
         return open;
     }
@@ -129,6 +145,40 @@ public class Giveaway {
 
     public void setLastEntry(HashMap<Long, Long> lastEntry) {
         this.lastEntry = lastEntry;
+    }
+
+    public boolean toggleNotification(UUID uuid) {
+        if (playerNotificationList.contains(uuid)) {
+            playerNotificationList.remove(uuid);
+        } else {
+            playerNotificationList.add(uuid);
+        }
+
+        Configuration config = TeDiSync.getPlugin().getConfig();
+        List<String> UUIDStrings = new ArrayList<>();
+        for (UUID uuidFromList : playerNotificationList) {
+            UUIDStrings.add(uuidFromList.toString());
+        }
+
+        config.set("giveaways." + name.toLowerCase() + ".notifications", UUIDStrings);
+
+        try {
+            if (TeDiSync.getPlugin().saveConfig()) {
+                return playerNotificationList.contains(uuid);
+            }
+        } catch (IOException e) {
+            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway notifications could not be saved");
+        }
+        return playerNotificationList.contains(uuid);
+    }
+
+    public void setPlayerNotificationList(Collection<UUID> playerNotificationList) {
+        this.playerNotificationList.clear();
+        this.playerNotificationList.addAll(playerNotificationList);
+    }
+
+    public Collection<UUID> getPlayerNotificationList() {
+        return playerNotificationList;
     }
 
     public boolean countUp(Long id) {
@@ -207,8 +257,15 @@ public class Giveaway {
             EmbedBuilder embedBuilder = new EmbedBuilder().setTitle(title);
             embedBuilder.setColor(ChatColor.of(chatColor).getColor());
             embedBuilder.setDescription(message);
+            embedBuilder.setFooter("Gewinnspiel: " + StringUtil.capitalizeFirstLetter(name, true));
             try {
-                Message gm = channel.sendMessageEmbeds(embedBuilder.build()).addActionRow(Button.primary(name, buttonText)).submit().get();
+                Message gm;
+                if (isEnterMultiple()) {
+                    gm = channel.sendMessageEmbeds(embedBuilder.build()).addActionRow(Button.primary(name, buttonText), Button.success(name + "_Notification", Emoji.fromUnicode("U+1F4E7"))).submit().get();
+                } else {
+                    gm = channel.sendMessageEmbeds(embedBuilder.build()).addActionRow(Button.primary(name, buttonText)).submit().get();
+                }
+
                 this.setMessageID(gm.getIdLong());
                 if (this.saveToConfig()) {
                     return;

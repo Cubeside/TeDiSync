@@ -19,12 +19,16 @@ import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.PostLoginEvent;
+import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.config.Configuration;
+import net.md_5.bungee.event.EventHandler;
 
 import javax.annotation.Nonnull;
 import java.awt.*;
@@ -34,15 +38,18 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-public class DiscordBot extends ListenerAdapter {
+public class DiscordBot extends ListenerAdapter implements Listener {
     private static JDA discordAPI;
     private final TeDiSync plugin;
     private static HashMap<UUID, User> requests;
     private static HashMap<String, Giveaway> giveaways;
     private static HashMap<UUID, String> userEditGiveaway;
     private static HashMap<Long, UUID> discordIdToUUID;
+    private static HashMap<UUID, Long> UUIDToDiscordID;
 
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
@@ -56,12 +63,16 @@ public class DiscordBot extends ListenerAdapter {
         giveaways = new HashMap<>();
         userEditGiveaway = new HashMap<>();
         discordIdToUUID = new HashMap<>();
+        UUIDToDiscordID = new HashMap<>();
 
         Configuration config = TeDiSync.getPlugin().getConfig().getSection("discorduser");
         for (String id : config.getKeys()) {
             discordIdToUUID.put(Long.valueOf(id), UUID.fromString(config.getString(id)));
+            UUIDToDiscordID.put(UUID.fromString(config.getString(id)), Long.valueOf(id));
         }
         loadGiveawaysFromConfig();
+        startNotificationTask();
+        ProxyServer.getInstance().getPluginManager().registerListener(plugin, this);
     }
 
     public static HashMap<String, Giveaway> getGiveaways() {
@@ -87,6 +98,7 @@ public class DiscordBot extends ListenerAdapter {
         try {
             if (TeDiSync.getPlugin().saveConfig()) {
                 DiscordBot.getDiscordIdToUUID().put(id, uuid);
+                DiscordBot.getUUIDToDiscordID().put(uuid, id);
                 return true;
             }
         } catch (IOException e) {
@@ -124,9 +136,27 @@ public class DiscordBot extends ListenerAdapter {
                 }
 
                 if (giveaway.countUp(event.getUser().getIdLong())) {
-                    privateReplay(event, "Du hast dich für das Gewinnspiel eingetragen." + (giveaway.getEntryCount(event.getIdLong()) > 1 ? "Du bist jetzt " + giveaway.getEntryCount(event.getIdLong()) + "x für das Gewinnspiel eingetragen." : ""), ChatUtil.GREEN.getColor());
+                    privateReplay(event, "Du hast dich für das Gewinnspiel eingetragen." + (giveaway.isEnterMultiple() ? " Du bist jetzt " + giveaway.getEntryCount(event.getUser().getIdLong()) + "x für das Gewinnspiel eingetragen." : ""), ChatUtil.GREEN.getColor());
                 } else {
                     privateReplay(event, "Es ist ein Fehler aufgetreten.", ChatUtil.RED.getColor());
+                }
+            }
+
+            if (giveaway.getNotificationButton().equals(event.getComponentId())) {
+                UUID playerUUID = DiscordBot.discordIdToUUID.get(event.getUser().getIdLong());
+                if (playerUUID == null) {
+                    long channelID = plugin.getConfig().getLong("discord.registerchannel", -1);
+                    if (channelID == -1) {
+                        return;
+                    }
+                    TextChannel channel = DiscordBot.getDiscordAPI().getTextChannelById(channelID);
+                    privateReplay(event, "Dafür musst du dich im Discord Channel " + (channel != null ? channel.getName() : "NULL") + " Registrieren.", ChatUtil.RED.getColor());
+                    return;
+                }
+                if (giveaway.toggleNotification(playerUUID)) {
+                    privateReplay(event, "Du wirst jetzt in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für das Gewinnspiel eingetragen hast.", ChatUtil.GREEN.getColor());
+                } else {
+                    privateReplay(event, "Du wirst jetzt nicht mehr in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für das Gewinnspiel eingetragen hast.", ChatUtil.GREEN.getColor());
                 }
             }
         }
@@ -197,9 +227,15 @@ public class DiscordBot extends ListenerAdapter {
             long messageID = giveawayConfig.getLong(giveawayName + ".messageID");
             HashMap<Long, Integer> entries = entryListToMap(giveawayConfig.getStringList(giveawayName + ".entries"));
             HashMap<Long, Long> times = timeListToMap(giveawayConfig.getStringList(giveawayName + ".times"));
+            List<String> notificationStringList = giveawayConfig.getStringList(giveawayName + ".notifications");
+            List<UUID> notificationList = new ArrayList<>();
+            for (String UUIDString : notificationStringList) {
+                notificationList.add(UUID.fromString(UUIDString));
+            }
             Giveaway giveaway = new Giveaway(name, message, title, buttonText, chatColor, enterMultiple);
             giveaway.setMessageID(messageID);
             giveaway.setEntryList(entries);
+            giveaway.setPlayerNotificationList(notificationList);
             giveaway.setLastEntry(times);
             giveaway.setOpen(open);
             giveaways.put(giveawayName, giveaway);
@@ -258,10 +294,62 @@ public class DiscordBot extends ListenerAdapter {
         return discordIdToUUID;
     }
 
+    public static HashMap<UUID, Long> getUUIDToDiscordID() {
+        return UUIDToDiscordID;
+    }
+
     public static void sendRegisterMessage(TextChannel channel) {
         EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Registrieren");
         embedBuilder.setColor(ChatUtil.GREEN.getColor());
         embedBuilder.setDescription("Du kannst deinen Account mit deinem Minecraft-Account verknüpfen, damit dein Rang im Discord automatisch gesetzt werden kann und auch andere zusätzliche Funktionen für dich nutzbar sind.");
         channel.sendMessageEmbeds(embedBuilder.build()).addActionRow(Button.success("TeDiSync-Register", "Registrieren")).submit();
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PostLoginEvent event) {
+        ProxiedPlayer player = event.getPlayer();
+        ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
+            for (Giveaway giveaway : giveaways.values()) {
+                if (!giveaway.isOpen()) {
+                    continue;
+                }
+                sendNotificationToPlayer(giveaway, player.getUniqueId());
+            }
+        }, 3, TimeUnit.SECONDS);
+    }
+
+    private void startNotificationTask() {
+        ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
+            for (Giveaway giveaway : giveaways.values()) {
+                if (!giveaway.isOpen()) {
+                    continue;
+                }
+                for (UUID uuid : giveaway.getPlayerNotificationList()) {
+                    sendNotificationToPlayer(giveaway, uuid);
+                }
+            }
+        }, 0, 30, TimeUnit.MINUTES);
+    }
+
+    private void sendNotificationToPlayer(Giveaway giveaway, UUID uuid) {
+        if (!giveaway.getPlayerNotificationList().contains(uuid)) {
+            return;
+        }
+        User discordUser;
+        try {
+            discordUser = discordAPI.retrieveUserById(UUIDToDiscordID.get(uuid)).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+        if (discordUser == null || !giveaway.getLastEntry().containsKey(discordUser.getIdLong())) {
+            return;
+        }
+        Long lastEntry = giveaway.getLastEntry().get(discordUser.getIdLong());
+        if (!isCurrentDay(lastEntry)) {
+            ProxiedPlayer player = ProxyServer.getInstance().getPlayer(uuid);
+            if (player != null && player.isConnected()) {
+                ChatUtil.sendNormalMessage(player, "Hey, du hast dich heute noch nicht für das Gewinnspiel " + ChatUtil.BLUE + giveaway.getName() + ChatUtil.GREEN + " im Discord eingetragen!");
+            }
+        }
     }
 }
