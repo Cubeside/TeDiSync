@@ -125,7 +125,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
 
                 if (giveaway.isEnterMultiple()) {
                     if (giveaway.getLastEntry().containsKey(event.getUser().getIdLong()) && isCurrentDay(giveaway.getLastEntry().get(event.getUser().getIdLong()))) {
-                        privateReplay(event, "Du hast dich heute schon für dieses Gewinnspiel eingetragen.", ChatUtil.RED.getColor());
+                        privateReplay(event, "Du hast dich heute schon für dieses Gewinnspiel eingetragen. Du bist " + giveaway.getEntryCount(event.getUser().getIdLong()) + "x für das Gewinnspiel eingetragen.", ChatUtil.RED.getColor());
                         return;
                     }
                 } else {
