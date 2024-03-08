@@ -24,7 +24,7 @@ public class TeDiSyncDiscordCommand extends SubCommand {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String alias, String commandString, ArgsParser args) {
         String discordLink = plugin.getConfig().getString("discord.invitelink");
-        if (discordLink == null) {
+        if (discordLink == null || discordLink.isEmpty()) {
             ChatUtil.sendErrorMessage(sender, "Kein Discord Link in der Config hinterlegt.");
             return true;
         }
