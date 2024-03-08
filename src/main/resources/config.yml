@@ -11,6 +11,7 @@ discord:
   login_token: CHANGETHIS
   giveawaychannel: CHANGETHIS
   registerchannel: CHANGETHIS
+  invitelink: 'http://cubesi.de/discord'
 
 
 

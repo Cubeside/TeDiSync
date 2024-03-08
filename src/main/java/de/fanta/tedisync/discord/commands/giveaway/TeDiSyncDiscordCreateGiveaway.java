@@ -24,6 +24,12 @@ public class TeDiSyncDiscordCreateGiveaway extends SubCommand {
         }
 
         String giveawayName = args.getNext();
+
+        if (giveawayName.contains(".") || giveawayName.contains("/") || giveawayName.contains("\\")) {
+            ChatUtil.sendErrorMessage(sender, "Der Gewinnspiel name enthält unerlaubte Zeichen! (. / \\)");
+            return true;
+        }
+
         if (DiscordBot.getGiveaways().containsKey(giveawayName.toLowerCase())) {
             ChatUtil.sendErrorMessage(player, "Ein Gewinnspiel mit dem Namen " + ChatUtil.BLUE + giveawayName + ChatUtil.RED + " existiert bereits.");
             return true;
