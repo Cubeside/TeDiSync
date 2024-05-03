@@ -31,10 +31,9 @@ public class Giveaway {
     private boolean open = false;
     private HashMap<Long, Integer> entryList = new HashMap<>();
     private HashMap<Long, Long> lastEntry = new HashMap<>();
-    private Collection<UUID> playerNotificationList = new ArrayList<>();
     private long messageID;
 
-    public Giveaway(String name, String message, String title, String buttonText, String chatColor, boolean enterMultiple, HashMap<Long, Integer> entryList, HashMap<Long, Long> lastEntry, Collection<UUID> playerNotificationList) {
+    public Giveaway(String name, String message, String title, String buttonText, String chatColor, boolean enterMultiple, HashMap<Long, Integer> entryList, HashMap<Long, Long> lastEntry) {
         this.name = name;
         this.message = message;
         this.title = title;
@@ -43,7 +42,6 @@ public class Giveaway {
         this.enterMultiple = enterMultiple;
         this.entryList = entryList;
         this.lastEntry = lastEntry;
-        this.playerNotificationList.addAll(playerNotificationList);
         this.notificationButton = name + "_Notification";
     }
 
@@ -145,40 +143,6 @@ public class Giveaway {
 
     public void setLastEntry(HashMap<Long, Long> lastEntry) {
         this.lastEntry = lastEntry;
-    }
-
-    public boolean toggleNotification(UUID uuid) {
-        if (playerNotificationList.contains(uuid)) {
-            playerNotificationList.remove(uuid);
-        } else {
-            playerNotificationList.add(uuid);
-        }
-
-        Configuration config = TeDiSync.getPlugin().getConfig();
-        List<String> UUIDStrings = new ArrayList<>();
-        for (UUID uuidFromList : playerNotificationList) {
-            UUIDStrings.add(uuidFromList.toString());
-        }
-
-        config.set("giveaways." + name.toLowerCase() + ".notifications", UUIDStrings);
-
-        try {
-            if (TeDiSync.getPlugin().saveConfig()) {
-                return playerNotificationList.contains(uuid);
-            }
-        } catch (IOException e) {
-            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway notifications could not be saved");
-        }
-        return playerNotificationList.contains(uuid);
-    }
-
-    public void setPlayerNotificationList(Collection<UUID> playerNotificationList) {
-        this.playerNotificationList.clear();
-        this.playerNotificationList.addAll(playerNotificationList);
-    }
-
-    public Collection<UUID> getPlayerNotificationList() {
-        return playerNotificationList;
     }
 
     public boolean countUp(Long id) {

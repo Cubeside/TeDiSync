@@ -35,6 +35,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +51,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     private static HashMap<UUID, String> userEditGiveaway;
     private static HashMap<Long, UUID> discordIdToUUID;
     private static HashMap<UUID, Long> UUIDToDiscordID;
+    private static final Collection<UUID> playerNotificationList = new ArrayList<>();
 
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
@@ -153,7 +155,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                     privateReplay(event, "Dafür musst du dich im Discord Channel " + (channel != null ? channel.getName() : "NULL") + " Registrieren.", ChatUtil.RED.getColor());
                     return;
                 }
-                if (giveaway.toggleNotification(playerUUID)) {
+                if (toggleNotification(playerUUID)) {
                     privateReplay(event, "Du wirst jetzt in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für das Gewinnspiel eingetragen hast.", ChatUtil.GREEN.getColor());
                 } else {
                     privateReplay(event, "Du wirst jetzt nicht mehr in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für das Gewinnspiel eingetragen hast.", ChatUtil.GREEN.getColor());
@@ -235,11 +237,18 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             Giveaway giveaway = new Giveaway(name, message, title, buttonText, chatColor, enterMultiple);
             giveaway.setMessageID(messageID);
             giveaway.setEntryList(entries);
-            giveaway.setPlayerNotificationList(notificationList);
             giveaway.setLastEntry(times);
             giveaway.setOpen(open);
             giveaways.put(giveawayName, giveaway);
+            setPlayerNotificationList(notificationList); //TODO Remove in next Version
         }
+
+        List<String> notificationStringList = giveawayConfig.getStringList("notifications");
+        List<UUID> notificationList = new ArrayList<>();
+        for (String UUIDString : notificationStringList) {
+            notificationList.add(UUID.fromString(UUIDString));
+        }
+        playerNotificationList.addAll(notificationList);
     }
 
     public HashMap<Long, Long> timeListToMap(List<String> timeList) {
@@ -324,7 +333,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                 if (!giveaway.isOpen()) {
                     continue;
                 }
-                for (UUID uuid : giveaway.getPlayerNotificationList()) {
+                for (UUID uuid : getPlayerNotificationList()) {
                     sendNotificationToPlayer(giveaway, uuid);
                 }
             }
@@ -332,7 +341,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     }
 
     private void sendNotificationToPlayer(Giveaway giveaway, UUID uuid) {
-        if (!giveaway.getPlayerNotificationList().contains(uuid)) {
+        if (!getPlayerNotificationList().contains(uuid)) {
             return;
         }
         User discordUser;
@@ -351,5 +360,39 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                 ChatUtil.sendNormalMessage(player, "Hey, du hast dich heute noch nicht für das Gewinnspiel " + ChatUtil.BLUE + giveaway.getName() + ChatUtil.GREEN + " im Discord eingetragen!");
             }
         }
+    }
+
+    private void setPlayerNotificationList(Collection<UUID> playerNotifications) {
+        playerNotificationList.clear();
+        playerNotificationList.addAll(playerNotifications);
+    }
+
+    private static Collection<UUID> getPlayerNotificationList() {
+        return playerNotificationList;
+    }
+
+    public boolean toggleNotification(UUID uuid) {
+        if (playerNotificationList.contains(uuid)) {
+            playerNotificationList.remove(uuid);
+        } else {
+            playerNotificationList.add(uuid);
+        }
+
+        Configuration config = TeDiSync.getPlugin().getConfig();
+        List<String> UUIDStrings = new ArrayList<>();
+        for (UUID uuidFromList : playerNotificationList) {
+            UUIDStrings.add(uuidFromList.toString());
+        }
+
+        config.set("giveaways.notifications", UUIDStrings);
+
+        try {
+            if (TeDiSync.getPlugin().saveConfig()) {
+                return playerNotificationList.contains(uuid);
+            }
+        } catch (IOException e) {
+            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway notifications could not be saved");
+        }
+        return playerNotificationList.contains(uuid);
     }
 }
