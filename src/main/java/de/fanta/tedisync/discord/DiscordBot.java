@@ -156,9 +156,9 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                     return;
                 }
                 if (toggleNotification(playerUUID)) {
-                    privateReplay(event, "Du wirst jetzt in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für Aktive Gewinnspiele eingetragen hast.", ChatUtil.GREEN.getColor());
+                    privateReplay(event, "Du wirst jetzt in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für aktive Gewinnspiele eingetragen hast.", ChatUtil.GREEN.getColor());
                 } else {
-                    privateReplay(event, "Du wirst jetzt nicht mehr in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für Aktive Gewinnspiele eingetragen hast.", ChatUtil.GREEN.getColor());
+                    privateReplay(event, "Du wirst jetzt nicht mehr in Minecraft benachrichtigt, falls du dich an einem Tag noch nicht für aktive Gewinnspiele eingetragen hast.", ChatUtil.GREEN.getColor());
                 }
             }
         }
