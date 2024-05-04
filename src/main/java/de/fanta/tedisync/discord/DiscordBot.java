@@ -240,7 +240,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             giveaway.setLastEntry(times);
             giveaway.setOpen(open);
             giveaways.put(giveawayName, giveaway);
-            setPlayerNotificationList(notificationList); //TODO Remove in next Version
+            playerNotificationList.addAll(notificationList);
         }
 
         List<String> notificationStringList = giveawayConfig.getStringList("notifications");
