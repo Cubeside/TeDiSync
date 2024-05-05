@@ -35,7 +35,7 @@ public class TeamSpeakListNewbiesCommand extends SubCommand {
 
         List<Client> clients = teamSpeakBot.getAsyncApi().getClients().getUninterruptibly();
         if (clients == null || clients.isEmpty()) {
-            ChatUtil.sendNormalMessage(player, "Keine Neulinge Online!");
+            ChatUtil.sendNormalMessage(player, "Keine Neulinge online!");
             return true;
         }
 
@@ -50,7 +50,7 @@ public class TeamSpeakListNewbiesCommand extends SubCommand {
         });
 
         if (newbies.isEmpty()) {
-            ChatUtil.sendNormalMessage(player, "Keine Neulinge Online!");
+            ChatUtil.sendNormalMessage(player, "Keine Neulinge online!");
             return true;
         }
         ChatUtil.sendNormalMessage(player, "--- Newbies ---");

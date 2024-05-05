@@ -1,8 +1,8 @@
 package de.fanta.tedisync.teamspeak.commands;
 
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
-import de.fanta.tedisync.discord.DiscordBot;
 import de.fanta.tedisync.teamspeak.TeamSpeakBot;
+import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
@@ -30,12 +30,28 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
         }
 
         String tsID = teamSpeakBot.getRequests().get(player.getUniqueId());
+
+        if (tsID == null) {
+            ChatUtil.sendErrorMessage(player, "Du hast momentan keine Anfrage.");
+            return true;
+        }
+
         ClientInfo client;
         try {
             client = teamSpeakBot.getAsyncApi().getClientByUId(tsID).get();
         } catch (InterruptedException e) {
             ChatUtil.sendErrorMessage(player, "TeamSpeak Client nicht gefunden.");
             return true;
+        }
+
+        try {
+            TeamSpeakUserInfo userInfo = teamSpeakBot.getDatabase().getUserByTSID(tsID);
+            if (userInfo != null) {
+                ChatUtil.sendErrorMessage(player, "Dieser TeamSpeak Account ist bereits verbunden!");
+                return true;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
         if (confirm) {
@@ -54,8 +70,8 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
                 ChatUtil.sendErrorMessage(player, "Du hast momentan keine Anfrage.");
             }
         } else {
-            if (DiscordBot.getRequests().containsKey(player.getUniqueId())) {
-                DiscordBot.getRequests().remove(player.getUniqueId());
+            if (teamSpeakBot.getRequests().containsKey(player.getUniqueId())) {
+                teamSpeakBot.getRequests().remove(player.getUniqueId());
                 ChatUtil.sendNormalMessage(player, "Die Anfrage wurde abgelehnt.");
                 teamSpeakBot.getAsyncApi().sendPrivateMessage(client.getId(), "Die Anfrage zum Verbinden wurde von " + player.getName() + " abgelehnt.");
             } else {
