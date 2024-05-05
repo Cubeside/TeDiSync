@@ -1,7 +1,7 @@
 package de.fanta.tedisync;
 
 import de.fanta.tedisync.discord.DiscordBot;
-import de.fanta.tedisync.teamspeak.TeamSpeakTest;
+import de.fanta.tedisync.teamspeak.TeamSpeakBot;
 import de.fanta.tedisync.utils.ChatUtil;
 import net.luckperms.api.LuckPerms;
 import net.md_5.bungee.api.plugin.Plugin;
@@ -41,7 +41,7 @@ public final class TeDiSync extends Plugin {
         }
 
         if (config.getBoolean("teamspeak.enabled")) {
-            new TeamSpeakTest(this).initTeamSpeakBot();
+            new TeamSpeakBot(this).initTeamSpeakBot();
         }
 
         if (config.getBoolean("discord.enabled")) {

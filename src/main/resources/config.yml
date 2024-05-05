@@ -6,6 +6,23 @@ teamspeak:
     query_username: CHANGETHIS
     query_password: CHANGETHIS
     query_displayname: CHANGETHIS
+  database:
+    host: localhost
+    user: CHANGETHIS
+    password: CHANGETHIS
+    database: CHANGETHIS
+    tableprefix: teamspeak
+  rankIDs:
+    default: 10
+    vip: 440
+    veteran: 439
+    creator: 303
+    builder: 450
+    buddy: 36
+    staff: 26
+    admin: 22
+    owner: 379
+  message: Du bist neu auf unserem TeamSpeak. Um dich freizuschalten gib !register <MinecraftName> ein und akzeptiere die anfrage in Minecraft.
 discord:
   enabled: false
   login_token: CHANGETHIS
