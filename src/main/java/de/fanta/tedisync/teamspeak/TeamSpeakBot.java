@@ -7,7 +7,7 @@ import com.github.theholywaffle.teamspeak3.api.event.ClientJoinEvent;
 import com.github.theholywaffle.teamspeak3.api.event.ClientMovedEvent;
 import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
-import com.github.theholywaffle.teamspeak3.api.wrapper.ChannelInfo;
+import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.teamspeak.commands.TeamSpeakCommandRegistration;
@@ -39,6 +39,8 @@ public record TeamSpeakBot(TeDiSync plugin) {
     private static HashMap<UUID, String> requests;
     private static TS3ApiAsync asyncApi;
     private static HashMap<String, Integer> groupIDs;
+
+    private static Integer newbieGroup;
 
     public void initTeamSpeakBot() {
         database = new TeamSpeakDatabase(new SQLConfigBungee(plugin.getConfig().getSection("teamspeak.database")));
@@ -72,6 +74,8 @@ public record TeamSpeakBot(TeDiSync plugin) {
         Configuration rankConfig = plugin.getConfig().getSection("teamspeak.rankIDs");
         rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getInt(s)));
 
+        newbieGroup = plugin.getConfig().getInt("teamspeak.newbieGroup");
+
         asyncApi.addTS3Listeners(new TS3EventAdapter() {
             @Override
             public void onTextMessage(TextMessageEvent e) {
@@ -82,16 +86,13 @@ public record TeamSpeakBot(TeDiSync plugin) {
                 }
 
                 String command = args.getNext();
-                plugin.getLogger().info(command);
                 if (!command.equalsIgnoreCase("!register")) {
                     return;
                 }
 
-                ClientInfo client;
-                try {
-                    client = asyncApi.getClientInfo(e.getInvokerId()).get();
-                } catch (InterruptedException ex) {
-                    plugin.getLogger().log(Level.SEVERE, "Client " + e.getInvokerId() + " konnte nicht geladen werden!", ex);
+                ClientInfo client = asyncApi.getClientInfo(e.getInvokerId()).getUninterruptibly();
+
+                if (client == null) {
                     return;
                 }
 
@@ -107,30 +108,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                         if (proxiedPlayer == null || !proxiedPlayer.isConnected()) {
                             asyncApi.sendPrivateMessage(client.getId(), "Der Spieler " + playerName + " ist nicht online.");
                         } else {
-                            requests.put(proxiedPlayer.getUniqueId(), client.getUniqueIdentifier());
-                            ChatUtil.sendNormalMessage(proxiedPlayer, "Möchtest du deine Teamspeak ID " + ChatUtil.BLUE + client.getNickname() + ChatUtil.GREEN + " mit Minecraft verbinden?");
-
-                            ClickEvent acceptClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/teamspeak register accept");
-                            HoverEvent acceptHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Annehmen"));
-
-                            ClickEvent denyClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/teamspeak register deny");
-                            HoverEvent denyHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Ablehnen"));
-
-                            BaseComponent component = ComponentUtil.setColor("", ChatColor.BLUE);
-
-                            BaseComponent acceptComponent = ComponentUtil.setColor("Annehmen", ChatUtil.GREEN);
-                            acceptComponent.setHoverEvent(acceptHoverEvent);
-                            acceptComponent.setClickEvent(acceptClickEvent);
-                            component.addExtra(acceptComponent);
-
-                            component.addExtra(ComponentUtil.setColor(" | ", ChatColor.DARK_GRAY));
-
-                            BaseComponent denyComponent = ComponentUtil.setColor("Ablehnen", ChatUtil.RED);
-                            denyComponent.setHoverEvent(denyHoverEvent);
-                            denyComponent.setClickEvent(denyClickEvent);
-                            component.addExtra(denyComponent);
-                            ChatUtil.sendComponent(proxiedPlayer, component);
-
+                            sendRequestToPlayer(proxiedPlayer, client);
                             asyncApi.sendPrivateMessage(client.getId(), "Eine Anfrage zum Verbinden wurde in Minecraft an " + proxiedPlayer.getName() + " geschickt.");
                         }
                     } else {
@@ -143,11 +121,9 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
             @Override
             public void onClientJoin(ClientJoinEvent e) {
-                ClientInfo client;
-                try {
-                    client = asyncApi.getClientInfo(e.getClientId()).get();
-                } catch (InterruptedException ex) {
-                    plugin.getLogger().log(Level.SEVERE, "Client " + e.getClientId() + " konnte nicht geladen werden!", ex);
+                ClientInfo client = asyncApi.getClientInfo(e.getClientId()).getUninterruptibly();
+
+                if (client == null) {
                     return;
                 }
 
@@ -156,6 +132,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                     if (teamSpeakUserInfo != null) {
                         updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client);
                     } else {
+                        removeAllTeamSpeakGroups(client.getUniqueIdentifier());
                         String message = plugin.getConfig().getString("teamspeak.message");
                         asyncApi.sendPrivateMessage(e.getClientId(), message);
                     }
@@ -166,7 +143,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
             @Override
             public void onClientMoved(ClientMovedEvent e) {
-                ClientInfo client;
+                /*ClientInfo client;
                 try {
                     client = asyncApi.getClientInfo(e.getClientId()).get();
                 } catch (InterruptedException ex) {
@@ -181,29 +158,93 @@ public record TeamSpeakBot(TeDiSync plugin) {
                     throw new RuntimeException(ex);
                 }
 
-                plugin.getLogger().info("Client (" + client.getNickname() + " " + client.getIp() + " " + client.getUniqueIdentifier() + ") Joined Channel " + targetChannel.getName());
-
+                plugin.getLogger().info("Client (" + client.getNickname() + " " + client.getIp() + " " + client.getUniqueIdentifier() + ") Joined Channel " + targetChannel.getName());*/
             }
         });
     }
 
     public void updateTeamSpeakGroup(UUID uuid, ClientInfo clientInfo) {
-        User user = LuckPermsProvider.get().getUserManager().getUser(uuid);
-        String group = user != null ? user.getPrimaryGroup() : "default";
-        int groupID = groupIDs.get(group);
-        int[] ranks = asyncApi.getClientInfo(clientInfo.getId()).getUninterruptibly().getServerGroups();
-        List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
+        try {
+            if (!asyncApi.isClientOnline(clientInfo.getId()).getUninterruptibly()) {
+                return;
+            }
 
+            User user = LuckPermsProvider.get().getUserManager().getUser(uuid);
+            String group = user != null ? user.getPrimaryGroup() : "default";
+            int groupID = groupIDs.get(group);
+            int[] ranks = asyncApi.getClientInfo(clientInfo.getId()).getUninterruptibly().getServerGroups();
+            List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
 
-        for (Integer userRank : tsUserRanks) {
-            if (groupIDs.containsValue(userRank) && userRank != groupID) {
-                asyncApi.removeClientFromServerGroup(userRank, clientInfo.getDatabaseId()).getUninterruptibly();
+            for (Integer userRank : tsUserRanks) {
+                if (groupIDs.containsValue(userRank) && userRank != groupID) {
+                    asyncApi.removeClientFromServerGroup(userRank, clientInfo.getDatabaseId());
+                }
+            }
+
+            if (!tsUserRanks.contains(groupID)) {
+                asyncApi.addClientToServerGroup(groupID, clientInfo.getDatabaseId());
+            }
+        } catch (TS3CommandFailedException e) {
+            int errorID = e.getError().getId();
+            if (errorID == 512 || errorID == 1540) {
+                plugin.getLogger().log(Level.INFO, "Error by Update User " + uuid.toString() + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID);
+            } else {
+                plugin.getLogger().log(Level.INFO, "Error by Update User " + uuid.toString() + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID, e);
             }
         }
 
-        if (!tsUserRanks.contains(groupID)) {
-            asyncApi.addClientToServerGroup(groupID, clientInfo.getDatabaseId()).getUninterruptibly();
+    }
+
+    public void removeAllTeamSpeakGroups(String id) {
+        ClientInfo clientInfo = asyncApi.getClientByUId(id).getUninterruptibly();
+        try {
+            if (clientInfo == null || !asyncApi.isClientOnline(clientInfo.getId()).getUninterruptibly()) {
+                return;
+            }
+
+            int[] ranks = asyncApi.getClientInfo(clientInfo.getId()).getUninterruptibly().getServerGroups();
+            List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
+
+            for (Integer userRank : tsUserRanks) {
+                if (groupIDs.containsValue(userRank)) {
+                    asyncApi.removeClientFromServerGroup(userRank, clientInfo.getDatabaseId());
+                }
+            }
+        } catch (TS3CommandFailedException e) {
+            int errorID = e.getError().getId();
+            if (errorID == 512 || errorID == 1540) {
+                plugin.getLogger().log(Level.INFO, "Error by Remove Group from " + clientInfo + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID);
+            } else {
+                plugin.getLogger().log(Level.INFO, "Error by Remove Group from " + clientInfo + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID, e);
+            }
         }
+
+    }
+
+    public void sendRequestToPlayer(ProxiedPlayer proxiedPlayer, ClientInfo client) {
+        requests.put(proxiedPlayer.getUniqueId(), client.getUniqueIdentifier());
+        ChatUtil.sendNormalMessage(proxiedPlayer, "Möchtest du deine Teamspeak ID " + ChatUtil.BLUE + client.getNickname() + ChatUtil.GREEN + " mit Minecraft verbinden?");
+
+        ClickEvent acceptClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/teamspeak register accept");
+        HoverEvent acceptHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Annehmen"));
+
+        ClickEvent denyClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/teamspeak register deny");
+        HoverEvent denyHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Ablehnen"));
+
+        BaseComponent component = ComponentUtil.setColor("", ChatColor.BLUE);
+
+        BaseComponent acceptComponent = ComponentUtil.setColor("Annehmen", ChatUtil.GREEN);
+        acceptComponent.setHoverEvent(acceptHoverEvent);
+        acceptComponent.setClickEvent(acceptClickEvent);
+        component.addExtra(acceptComponent);
+
+        component.addExtra(ComponentUtil.setColor(" | ", ChatColor.DARK_GRAY));
+
+        BaseComponent denyComponent = ComponentUtil.setColor("Ablehnen", ChatUtil.RED);
+        denyComponent.setHoverEvent(denyHoverEvent);
+        denyComponent.setClickEvent(denyClickEvent);
+        component.addExtra(denyComponent);
+        ChatUtil.sendComponent(proxiedPlayer, component);
     }
 
     public TeamSpeakDatabase getDatabase() {
@@ -216,5 +257,9 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
     public TS3ApiAsync getAsyncApi() {
         return asyncApi;
+    }
+
+    public Integer getNewbieGroup() {
+        return newbieGroup;
     }
 }

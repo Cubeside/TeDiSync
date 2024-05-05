@@ -41,7 +41,7 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
         if (confirm) {
             if (teamSpeakBot.getRequests().containsKey(player.getUniqueId())) {
                 try {
-                    teamSpeakBot.getDatabase().insertSecret(player, tsID);
+                    teamSpeakBot.getDatabase().insertUser(player, tsID);
                     teamSpeakBot.getRequests().remove(player.getUniqueId());
                     teamSpeakBot.updateTeamSpeakGroup(player.getUniqueId(), client);
                     ChatUtil.sendNormalMessage(player, "Die Anfrage wurde angenommen.");

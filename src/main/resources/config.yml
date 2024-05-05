@@ -12,6 +12,12 @@ teamspeak:
     password: CHANGETHIS
     database: CHANGETHIS
     tableprefix: teamspeak
+  oldDatabase:
+    host: localhost
+    user: CHANGETHIS
+    password: CHANGETHIS
+    database: CHANGETHIS
+    tableprefix: teamspeak
   rankIDs:
     default: 10
     vip: 440
@@ -22,6 +28,7 @@ teamspeak:
     staff: 26
     admin: 22
     owner: 379
+  newbieGroup: 11
   message: Du bist neu auf unserem TeamSpeak. Um dich freizuschalten gib !register <MinecraftName> ein und akzeptiere die anfrage in Minecraft.
 discord:
   enabled: false
