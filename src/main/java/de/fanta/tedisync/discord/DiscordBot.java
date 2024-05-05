@@ -229,18 +229,12 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             long messageID = giveawayConfig.getLong(giveawayName + ".messageID");
             HashMap<Long, Integer> entries = entryListToMap(giveawayConfig.getStringList(giveawayName + ".entries"));
             HashMap<Long, Long> times = timeListToMap(giveawayConfig.getStringList(giveawayName + ".times"));
-            List<String> notificationStringList = giveawayConfig.getStringList(giveawayName + ".notifications");
-            List<UUID> notificationList = new ArrayList<>();
-            for (String UUIDString : notificationStringList) {
-                notificationList.add(UUID.fromString(UUIDString));
-            }
             Giveaway giveaway = new Giveaway(name, message, title, buttonText, chatColor, enterMultiple);
             giveaway.setMessageID(messageID);
             giveaway.setEntryList(entries);
             giveaway.setLastEntry(times);
             giveaway.setOpen(open);
             giveaways.put(giveawayName, giveaway);
-            playerNotificationList.addAll(notificationList);
         }
 
         List<String> notificationStringList = giveawayConfig.getStringList("notifications");
@@ -360,11 +354,6 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                 ChatUtil.sendNormalMessage(player, "Hey, du hast dich heute noch nicht für das Gewinnspiel " + ChatUtil.BLUE + giveaway.getName() + ChatUtil.GREEN + " im Discord eingetragen!");
             }
         }
-    }
-
-    private void setPlayerNotificationList(Collection<UUID> playerNotifications) {
-        playerNotificationList.clear();
-        playerNotificationList.addAll(playerNotifications);
     }
 
     private static Collection<UUID> getPlayerNotificationList() {

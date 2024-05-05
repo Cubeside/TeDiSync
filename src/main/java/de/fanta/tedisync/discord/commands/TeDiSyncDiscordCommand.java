@@ -29,7 +29,7 @@ public class TeDiSyncDiscordCommand extends SubCommand {
             return true;
         }
 
-        BaseComponent component = ComponentUtil.setColor("Discord: ", ChatColor.GREEN);
+        BaseComponent component = ComponentUtil.setColor("Discord: ", ChatUtil.GREEN);
         ClickEvent URLClickEvent = new ClickEvent(ClickEvent.Action.OPEN_URL, discordLink);
         HoverEvent URLHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Discord"));
         BaseComponent acceptComponent = ComponentUtil.setColor(">> Hier klicken <<", ChatUtil.BLUE);

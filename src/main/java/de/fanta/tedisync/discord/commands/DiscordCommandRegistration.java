@@ -13,7 +13,7 @@ public record DiscordCommandRegistration(TeDiSync plugin) {
 
     public void registerCommands() {
         CommandRouter commandRouter = new CommandRouter();
-        pM.registerCommand(plugin, new CommandRouterCommand(commandRouter, "discord"));
+        pM.registerCommand(plugin, new CommandRouterCommand(commandRouter, "discord", null, "dc"));
         commandRouter.addCommandMapping(new TeDiSyncDiscordCommand(plugin));
         commandRouter.addCommandMapping(new TeDiSyncDiscordSendRegisterMessage(plugin), "sendregistermessage");
         commandRouter.addCommandMapping(new TeDiSyncDiscordRegisterConfirmCommand(true), "register", "accept");
