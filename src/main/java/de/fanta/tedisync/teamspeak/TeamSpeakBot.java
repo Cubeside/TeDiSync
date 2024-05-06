@@ -3,6 +3,7 @@ package de.fanta.tedisync.teamspeak;
 import com.github.theholywaffle.teamspeak3.TS3ApiAsync;
 import com.github.theholywaffle.teamspeak3.TS3Config;
 import com.github.theholywaffle.teamspeak3.TS3Query;
+import com.github.theholywaffle.teamspeak3.api.ClientProperty;
 import com.github.theholywaffle.teamspeak3.api.event.ClientJoinEvent;
 import com.github.theholywaffle.teamspeak3.api.event.ClientMovedEvent;
 import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
@@ -12,6 +13,7 @@ import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.teamspeak.commands.TeamSpeakCommandRegistration;
+import de.fanta.tedisync.teamspeak.database.BungeeListener;
 import de.fanta.tedisync.teamspeak.database.TeamSpeakDatabase;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
@@ -29,6 +31,7 @@ import net.md_5.bungee.config.Configuration;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -76,6 +79,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
         new LuckPermsListener(this).createEventHandler();
         new TeamSpeakCommandRegistration(this).registerCommands();
+        plugin.getProxy().getPluginManager().registerListener(plugin, new BungeeListener(this));
 
         requests = new HashMap<>();
         groupIDs = new HashMap<>();
@@ -278,6 +282,59 @@ public record TeamSpeakBot(TeDiSync plugin) {
         denyComponent.setClickEvent(denyClickEvent);
         component.addExtra(denyComponent);
         ChatUtil.sendComponent(proxiedPlayer, component);
+    }
+
+    public void updateTSDescription(String tsID, ProxiedPlayer player) {
+        TeamSpeakUserInfo teamSpeakUserInfo = null;
+        try {
+            teamSpeakUserInfo = database.getUserByTSIDANDUUID(tsID, player.getUniqueId());
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error while Loading TeamSpeakUserInfo", e);
+        }
+        if (teamSpeakUserInfo != null) {
+            updateTSDescription(teamSpeakUserInfo, player);
+        }
+    }
+    public void updateTSDescription(TeamSpeakUserInfo teamSpeakUserInfo, ProxiedPlayer player) {
+        if (teamSpeakUserInfo != null && asyncApi.isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
+            String lastName = teamSpeakUserInfo.latestName();
+
+            if (asyncApi.isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
+                try {
+                    ClientInfo clientInfo = asyncApi.getClientByUId(teamSpeakUserInfo.tsID()).getUninterruptibly();
+                    if (clientInfo != null) {
+                        if (lastName != null) {
+                            String description = clientInfo.getDescription();
+                            if (lastName.equals(player.getName())) {
+                                if (!description.contains(player.getName())) {
+                                    description = player.getName() + ((description.isEmpty() || description.isBlank()) ? "" : " | " + description) ;
+                                    setDescription(clientInfo, description);
+                                }
+                            } else {
+                                description = description.replace(lastName, player.getName());
+                                setDescription(clientInfo, description);
+                                try {
+                                    database.updateMcName(teamSpeakUserInfo.uuid(), teamSpeakUserInfo.tsID(), player.getName());
+                                } catch (SQLException ex) {
+                                    plugin.getLogger().log(Level.SEVERE, "Error while Update McName", ex);
+                                }
+                            }
+                        } else {
+                            try {
+                                database.updateMcName(teamSpeakUserInfo.uuid(), teamSpeakUserInfo.tsID(), player.getName());
+                            } catch (SQLException ex) {
+                                plugin.getLogger().log(Level.SEVERE, "Error while Update McName", ex);
+                            }
+                        }
+                    }
+                } catch (TS3CommandFailedException ignored) {
+                }
+            }
+        }
+    }
+
+    private void setDescription(ClientInfo clientInfo, String description) {
+        asyncApi.editClient(clientInfo.getId(), Collections.singletonMap(ClientProperty.CLIENT_DESCRIPTION, (description.length() > 200 ? description.substring(0, 200) : description)));
     }
 
     public TeamSpeakDatabase getDatabase() {

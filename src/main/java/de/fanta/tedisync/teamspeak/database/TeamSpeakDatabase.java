@@ -23,6 +23,7 @@ public class TeamSpeakDatabase {
     private final String getUserByTSIDANDUUIDQuery;
     private final String getUserByUUISQuery;
     private final String deleteUserbyTSIDQuery;
+    private final String updateNameQuery;
 
     public TeamSpeakDatabase(SQLConfig config) {
         this.config = config;
@@ -39,6 +40,7 @@ public class TeamSpeakDatabase {
         getUserByTSIDANDUUIDQuery = "SELECT * FROM " + config.getTablePrefix() + "_user" + " WHERE tsID = ? AND uuid = ?";
         getUserByUUISQuery = "SELECT * FROM " + config.getTablePrefix() + "_user" + " WHERE uuid = ?";
         deleteUserbyTSIDQuery = "DELETE FROM " + config.getTablePrefix() + "_user" + " WHERE `tsID` = ?";
+        updateNameQuery = "UPDATE " + config.getTablePrefix() + "_user" + " SET `lastMcName` = ? WHERE tsID = ? AND uuid = ?";
     }
 
     private void createTablesIfNotExist() throws SQLException {
@@ -124,6 +126,18 @@ public class TeamSpeakDatabase {
             PreparedStatement smt = sqlConnection.getOrCreateStatement(deleteUserbyTSIDQuery);
 
             smt.setString(1, tsID);
+            smt.executeUpdate();
+            return null;
+        });
+    }
+
+    public void updateMcName(UUID uuid, String tsID, String newName) throws SQLException {
+        this.connection.runCommands((connection, sqlConnection) -> {
+            PreparedStatement smt = sqlConnection.getOrCreateStatement(updateNameQuery);
+
+            smt.setString(1, newName);
+            smt.setString(2, tsID);
+            smt.setString(3, uuid.toString());
             smt.executeUpdate();
             return null;
         });
