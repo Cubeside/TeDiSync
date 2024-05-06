@@ -215,8 +215,10 @@ public record TeamSpeakBot(TeDiSync plugin) {
     }
 
     public void removeAllTeamSpeakGroups(String id) {
-        ClientInfo clientInfo = asyncApi.getClientByUId(id).getUninterruptibly();
+
         try {
+            ClientInfo clientInfo = asyncApi.getClientByUId(id).getUninterruptibly();
+
             if (clientInfo == null || !asyncApi.isClientOnline(clientInfo.getId()).getUninterruptibly()) {
                 return;
             }
@@ -231,13 +233,10 @@ public record TeamSpeakBot(TeDiSync plugin) {
             }
         } catch (TS3CommandFailedException e) {
             int errorID = e.getError().getId();
-            if (errorID == 512 || errorID == 1540) {
-                plugin.getLogger().log(Level.INFO, "Error by Remove Group from " + clientInfo + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID);
-            } else {
-                plugin.getLogger().log(Level.INFO, "Error by Remove Group from " + clientInfo + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID, e);
+            if (errorID != 512 && errorID != 1540) {
+                plugin.getLogger().log(Level.INFO, "Error by Remove Group from" + " (" + id + ") " + e.getError().getMessage() + " " + errorID, e);
             }
         }
-
     }
 
     public void sendRequestToPlayer(ProxiedPlayer proxiedPlayer, ClientInfo client) {
