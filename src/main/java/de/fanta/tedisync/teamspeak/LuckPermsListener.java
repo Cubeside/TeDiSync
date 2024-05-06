@@ -15,18 +15,15 @@ public record LuckPermsListener(TeamSpeakBot teamSpeakBot) {
             try {
                 Collection<TeamSpeakUserInfo> teamSpeakUserInfos = teamSpeakBot.getDatabase().getUsersByUUIS(event.getUser().getUniqueId());
                 teamSpeakUserInfos.forEach(teamSpeakUserInfo -> {
-                    ClientInfo clientInfo = null;
                     if (teamSpeakBot.getAsyncApi().isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
                         try {
-                            clientInfo = teamSpeakBot.getAsyncApi().getClientByUId(teamSpeakUserInfo.tsID()).getUninterruptibly();
+                            ClientInfo clientInfo = teamSpeakBot.getAsyncApi().getClientByUId(teamSpeakUserInfo.tsID()).getUninterruptibly();
+                            if (clientInfo != null) {
+                                teamSpeakBot.updateTeamSpeakGroup(event.getUser().getUniqueId(), clientInfo);
+                            }
                         } catch (TS3CommandFailedException ignored) {
                         }
                     }
-
-                    if (clientInfo != null) {
-                        teamSpeakBot.updateTeamSpeakGroup(event.getUser().getUniqueId(), clientInfo);
-                    }
-
                 });
             } catch (SQLException e) {
                 throw new RuntimeException(e);
