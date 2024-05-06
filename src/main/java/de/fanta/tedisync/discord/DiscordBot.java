@@ -237,7 +237,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             giveaways.put(giveawayName, giveaway);
         }
 
-        List<String> notificationStringList = giveawayConfig.getStringList("notifications");
+        List<String> notificationStringList = TeDiSync.getPlugin().getConfig().getStringList("notifications");
         List<UUID> notificationList = new ArrayList<>();
         for (String UUIDString : notificationStringList) {
             notificationList.add(UUID.fromString(UUIDString));
@@ -373,7 +373,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             UUIDStrings.add(uuidFromList.toString());
         }
 
-        config.set("giveaways.notifications", UUIDStrings);
+        config.set("notifications", UUIDStrings);
 
         try {
             if (TeDiSync.getPlugin().saveConfig()) {
