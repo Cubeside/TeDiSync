@@ -155,7 +155,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                 } catch (TS3CommandFailedException ex) {
                     int errorID = ex.getError().getId();
                     if (errorID != 512 && errorID != 1540) {
-                        plugin.getLogger().log(Level.INFO, "Error by Remove Group from" + " (" + e.getClientId() + ") " + ex.getError().getMessage() + " " + errorID, e);
+                        plugin.getLogger().log(Level.INFO, "Error by Join User from" + " (" + e.getClientId() + ") " + ex.getError().getMessage() + " " + errorID, e);
                     }
                 }
             }
