@@ -132,23 +132,31 @@ public record TeamSpeakBot(TeDiSync plugin) {
                     return;
                 }
 
-                ClientInfo client = asyncApi.getClientByUId(e.getUniqueClientIdentifier()).getUninterruptibly();
-
-                if (client == null) {
-                    return;
-                }
 
                 try {
-                    TeamSpeakUserInfo teamSpeakUserInfo = database.getUserByTSID(client.getUniqueIdentifier());
-                    if (teamSpeakUserInfo != null) {
-                        updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client);
-                    } else {
-                        removeAllTeamSpeakGroups(client.getUniqueIdentifier());
-                        String message = plugin.getConfig().getString("teamspeak.message");
-                        asyncApi.sendPrivateMessage(e.getClientId(), message);
+                    ClientInfo client = asyncApi.getClientByUId(e.getUniqueClientIdentifier()).getUninterruptibly();
+
+                    if (client == null) {
+                        return;
                     }
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
+
+                    try {
+                        TeamSpeakUserInfo teamSpeakUserInfo = database.getUserByTSID(client.getUniqueIdentifier());
+                        if (teamSpeakUserInfo != null) {
+                            updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client);
+                        } else {
+                            removeAllTeamSpeakGroups(client.getUniqueIdentifier());
+                            String message = plugin.getConfig().getString("teamspeak.message");
+                            asyncApi.sendPrivateMessage(e.getClientId(), message);
+                        }
+                    } catch (SQLException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                } catch (TS3CommandFailedException ex) {
+                    int errorID = ex.getError().getId();
+                    if (errorID != 512 && errorID != 1540) {
+                        plugin.getLogger().log(Level.INFO, "Error by Remove Group from" + " (" + e.getClientId() + ") " + ex.getError().getMessage() + " " + errorID, e);
+                    }
                 }
             }
 
@@ -205,9 +213,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
             }
         } catch (TS3CommandFailedException e) {
             int errorID = e.getError().getId();
-            if (errorID == 512 || errorID == 1540) {
-                plugin.getLogger().log(Level.INFO, "Error by Update User " + uuid.toString() + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID);
-            } else {
+            if (errorID != 512 && errorID != 1540) {
                 plugin.getLogger().log(Level.INFO, "Error by Update User " + uuid.toString() + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID, e);
             }
         }
