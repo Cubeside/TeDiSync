@@ -124,7 +124,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
             public void onClientJoin(ClientJoinEvent e) {
                 ClientInfo client = asyncApi.getClientInfo(e.getClientId()).getUninterruptibly();
 
-                if (client == null) {
+                if (client == null || client.isServerQueryClient()) {
                     return;
                 }
 
