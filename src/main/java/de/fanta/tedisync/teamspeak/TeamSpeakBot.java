@@ -122,9 +122,13 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
             @Override
             public void onClientJoin(ClientJoinEvent e) {
+                if (e.getUniqueClientIdentifier().equalsIgnoreCase("serveradmin")) {
+                    return;
+                }
+
                 ClientInfo client = asyncApi.getClientInfo(e.getClientId()).getUninterruptibly();
 
-                if (client == null || client.isServerQueryClient()) {
+                if (client == null) {
                     return;
                 }
 
