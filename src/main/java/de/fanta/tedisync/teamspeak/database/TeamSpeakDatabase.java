@@ -128,4 +128,8 @@ public class TeamSpeakDatabase {
             return null;
         });
     }
+
+    public void disconnect() {
+        this.connection.disconnect();
+    }
 }

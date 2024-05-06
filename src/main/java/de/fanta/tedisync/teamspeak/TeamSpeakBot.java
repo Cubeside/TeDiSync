@@ -38,6 +38,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
     private static TeamSpeakDatabase database;
     private static HashMap<UUID, String> requests;
     private static TS3ApiAsync asyncApi;
+    private static TS3Query query;
     private static HashMap<String, Integer> groupIDs;
 
     private static Integer newbieGroup;
@@ -56,7 +57,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
         config.setHost(host);
         config.setEnableCommunicationsLogging(true);
 
-        final TS3Query query = new TS3Query(config);
+        query = new TS3Query(config);
         query.connect();
 
         asyncApi = query.getAsyncApi();
@@ -161,6 +162,14 @@ public record TeamSpeakBot(TeDiSync plugin) {
                 plugin.getLogger().info("Client (" + client.getNickname() + " " + client.getIp() + " " + client.getUniqueIdentifier() + ") Joined Channel " + targetChannel.getName());*/
             }
         });
+    }
+
+    public void stopTeamSpeakBot() {
+        if (query.isConnected()) {
+            asyncApi.logout();
+            query.exit();
+        }
+        database.disconnect();
     }
 
     public void updateTeamSpeakGroup(UUID uuid, ClientInfo clientInfo) {

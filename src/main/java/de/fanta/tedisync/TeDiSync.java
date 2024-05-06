@@ -51,7 +51,9 @@ public final class TeDiSync extends Plugin {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        if (config.getBoolean("teamspeak.enabled")) {
+            new TeamSpeakBot(this).stopTeamSpeakBot();
+        }
     }
 
     public static TeDiSync getPlugin() {
