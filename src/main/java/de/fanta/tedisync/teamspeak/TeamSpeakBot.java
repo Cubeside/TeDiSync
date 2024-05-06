@@ -97,7 +97,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                 }
 
                 if (!args.hasNext()) {
-                    asyncApi.sendPrivateMessage(client.getId(), "Du musst einen Spielername angeben! (!register NAME)");
+                    asyncApi.sendPrivateMessage(client.getId(), "Du musst einen Spielernamen angeben! (!register NAME)");
                     return;
                 }
 
@@ -112,7 +112,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                             asyncApi.sendPrivateMessage(client.getId(), "Eine Anfrage zum Verbinden wurde in Minecraft an " + proxiedPlayer.getName() + " geschickt.");
                         }
                     } else {
-                        asyncApi.sendPrivateMessage(client.getId(), "Diese TeamSpeak ID ist bereits mit einem Minecraft Account verbunden");
+                        asyncApi.sendPrivateMessage(client.getId(), "Diese TeamSpeak-ID ist bereits mit einem Minecraft-Account verbunden");
                     }
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
