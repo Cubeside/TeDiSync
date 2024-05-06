@@ -2,7 +2,8 @@ teamspeak:
   enabled: false
   login:
     host: 127.0.0.1
-    virtual_server_id: 1
+    port: 9987
+    query_port: 10011
     query_username: CHANGETHIS
     query_password: CHANGETHIS
     query_displayname: CHANGETHIS

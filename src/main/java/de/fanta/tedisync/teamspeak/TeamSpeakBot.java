@@ -8,6 +8,7 @@ import com.github.theholywaffle.teamspeak3.api.event.ClientMovedEvent;
 import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
+import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.teamspeak.commands.TeamSpeakCommandRegistration;
@@ -47,7 +48,8 @@ public record TeamSpeakBot(TeDiSync plugin) {
         database = new TeamSpeakDatabase(new SQLConfigBungee(plugin.getConfig().getSection("teamspeak.database")));
 
         String host = plugin.getConfig().getString("teamspeak.login.host");
-        int virtualserverid = plugin.getConfig().getInt("teamspeak.login.virtual_server_id");
+        int query_port = plugin.getConfig().getInt("teamspeak.login.query_port");
+        int port = plugin.getConfig().getInt("teamspeak.login.port");
         String query_username = plugin.getConfig().getString("teamspeak.login.query_username");
         String query_password = plugin.getConfig().getString("teamspeak.login.query_password");
         String query_displayname = plugin.getConfig().getString("teamspeak.login.query_displayname");
@@ -56,14 +58,18 @@ public record TeamSpeakBot(TeDiSync plugin) {
         final TS3Config config = new TS3Config();
         config.setHost(host);
         config.setEnableCommunicationsLogging(true);
+        config.setQueryPort(query_port);
+        config.setFloodRate(TS3Query.FloodRate.UNLIMITED);
+        config.setReconnectStrategy(ReconnectStrategy.exponentialBackoff());
 
         query = new TS3Query(config);
         query.connect();
 
         asyncApi = query.getAsyncApi();
         asyncApi.login(query_username, query_password);
-        asyncApi.selectVirtualServerById(virtualserverid);
+        asyncApi.selectVirtualServerByPort(port);
         asyncApi.setNickname(query_displayname);
+
 
         asyncApi.registerAllEvents();
 
@@ -126,7 +132,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                     return;
                 }
 
-                ClientInfo client = asyncApi.getClientInfo(e.getClientId()).getUninterruptibly();
+                ClientInfo client = asyncApi.getClientByUId(e.getUniqueClientIdentifier()).getUninterruptibly();
 
                 if (client == null) {
                     return;
