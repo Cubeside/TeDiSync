@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
 public record TeamSpeakBot(TeDiSync plugin) {
@@ -196,7 +197,13 @@ public record TeamSpeakBot(TeDiSync plugin) {
                 return;
             }
 
-            User user = LuckPermsProvider.get().getUserManager().getUser(uuid);
+            User user;
+            if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
+                user = LuckPermsProvider.get().getUserManager().getUser(uuid);
+            } else {
+                user = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+            }
+
             String group = user != null ? user.getPrimaryGroup() : "default";
             int groupID = groupIDs.get(group);
             int[] ranks = asyncApi.getClientInfo(clientInfo.getId()).getUninterruptibly().getServerGroups();
@@ -216,6 +223,8 @@ public record TeamSpeakBot(TeDiSync plugin) {
             if (errorID != 512 && errorID != 1540) {
                 plugin.getLogger().log(Level.INFO, "Error by Update User " + uuid.toString() + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID, e);
             }
+        } catch (ExecutionException | InterruptedException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error by Loading User " + uuid);
         }
 
     }
