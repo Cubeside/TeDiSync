@@ -19,17 +19,8 @@ import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
 import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import de.iani.cubesideutils.commands.ArgsParser;
-import net.luckperms.api.LuckPermsProvider;
-import net.luckperms.api.model.user.User;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.config.Configuration;
-
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +28,19 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.model.group.Group;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.query.Flag;
+import net.luckperms.api.query.QueryMode;
+import net.luckperms.api.query.QueryOptions;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.hover.content.Text;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.config.Configuration;
 
 public record TeamSpeakBot(TeDiSync plugin) {
 
@@ -58,7 +62,6 @@ public record TeamSpeakBot(TeDiSync plugin) {
         String query_password = plugin.getConfig().getString("teamspeak.login.query_password");
         String query_displayname = plugin.getConfig().getString("teamspeak.login.query_displayname");
 
-
         final TS3Config config = new TS3Config();
         config.setHost(host);
         config.setEnableCommunicationsLogging(true);
@@ -73,7 +76,6 @@ public record TeamSpeakBot(TeDiSync plugin) {
         asyncApi.login(query_username, query_password);
         asyncApi.selectVirtualServerByPort(port);
         asyncApi.setNickname(query_displayname);
-
 
         asyncApi.registerAllEvents();
 
@@ -137,7 +139,6 @@ public record TeamSpeakBot(TeDiSync plugin) {
                     return;
                 }
 
-
                 try {
                     ClientInfo client = asyncApi.getClientByUId(e.getUniqueClientIdentifier()).getUninterruptibly();
 
@@ -167,22 +168,24 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
             @Override
             public void onClientMoved(ClientMovedEvent e) {
-                /*ClientInfo client;
-                try {
-                    client = asyncApi.getClientInfo(e.getClientId()).get();
-                } catch (InterruptedException ex) {
-                    plugin.getLogger().log(Level.SEVERE, "Client " + e.getClientId() + " konnte nicht geladen werden!", ex);
-                    return;
-                }
-
-                ChannelInfo targetChannel;
-                try {
-                    targetChannel = asyncApi.getChannelInfo(e.getTargetChannelId()).get();
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-
-                plugin.getLogger().info("Client (" + client.getNickname() + " " + client.getIp() + " " + client.getUniqueIdentifier() + ") Joined Channel " + targetChannel.getName());*/
+                /*
+                 * ClientInfo client;
+                 * try {
+                 * client = asyncApi.getClientInfo(e.getClientId()).get();
+                 * } catch (InterruptedException ex) {
+                 * plugin.getLogger().log(Level.SEVERE, "Client " + e.getClientId() + " konnte nicht geladen werden!", ex);
+                 * return;
+                 * }
+                 *
+                 * ChannelInfo targetChannel;
+                 * try {
+                 * targetChannel = asyncApi.getChannelInfo(e.getTargetChannelId()).get();
+                 * } catch (InterruptedException ex) {
+                 * throw new RuntimeException(ex);
+                 * }
+                 *
+                 * plugin.getLogger().info("Client (" + client.getNickname() + " " + client.getIp() + " " + client.getUniqueIdentifier() + ") Joined Channel " + targetChannel.getName());
+                 */
             }
         });
     }
@@ -208,7 +211,15 @@ public record TeamSpeakBot(TeDiSync plugin) {
                 user = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
             }
 
-            String group = user != null ? user.getPrimaryGroup() : "default";
+            ArrayList<Group> userGroups = new ArrayList<>(user.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));
+            userGroups.sort((a, b) -> Integer.compare(b.getWeight().orElse(0), a.getWeight().orElse(0)));
+            String group = "default";
+            for (Group g : userGroups) {
+                if (groupIDs.containsKey(g.getName())) {
+                    group = g.getName();
+                    break;
+                }
+            }
             int groupID = groupIDs.get(group);
             int[] ranks = asyncApi.getClientInfo(clientInfo.getId()).getUninterruptibly().getServerGroups();
             List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
