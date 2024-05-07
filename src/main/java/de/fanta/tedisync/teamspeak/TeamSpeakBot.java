@@ -295,6 +295,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
             updateTSDescription(teamSpeakUserInfo, player);
         }
     }
+
     public void updateTSDescription(TeamSpeakUserInfo teamSpeakUserInfo, ProxiedPlayer player) {
         if (teamSpeakUserInfo != null && asyncApi.isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
             String lastName = teamSpeakUserInfo.latestName();
@@ -303,11 +304,11 @@ public record TeamSpeakBot(TeDiSync plugin) {
                 try {
                     ClientInfo clientInfo = asyncApi.getClientByUId(teamSpeakUserInfo.tsID()).getUninterruptibly();
                     if (clientInfo != null) {
+                        String description = clientInfo.getDescription();
                         if (lastName != null) {
-                            String description = clientInfo.getDescription();
                             if (lastName.equals(player.getName())) {
                                 if (!description.contains(player.getName())) {
-                                    description = player.getName() + ((description.isEmpty() || description.isBlank()) ? "" : " | " + description) ;
+                                    description = player.getName() + ((description.isEmpty() || description.isBlank()) ? "" : " | " + description);
                                     setDescription(clientInfo, description);
                                 }
                             } else {
@@ -320,6 +321,10 @@ public record TeamSpeakBot(TeDiSync plugin) {
                                 }
                             }
                         } else {
+                            if (!description.contains(player.getName())) {
+                                description = player.getName() + ((description.isEmpty() || description.isBlank()) ? "" : " | " + description);
+                                setDescription(clientInfo, description);
+                            }
                             try {
                                 database.updateMcName(teamSpeakUserInfo.uuid(), teamSpeakUserInfo.tsID(), player.getName());
                             } catch (SQLException ex) {
