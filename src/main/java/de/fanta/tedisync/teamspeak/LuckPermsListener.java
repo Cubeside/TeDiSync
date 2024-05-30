@@ -8,7 +8,6 @@ import net.md_5.bungee.api.ProxyServer;
 
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public record LuckPermsListener(TeamSpeakBot teamSpeakBot) {
