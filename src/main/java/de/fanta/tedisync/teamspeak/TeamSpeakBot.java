@@ -22,10 +22,13 @@ import de.iani.cubesideutils.commands.ArgsParser;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import net.luckperms.api.LuckPermsProvider;
@@ -45,10 +48,11 @@ import net.md_5.bungee.config.Configuration;
 public record TeamSpeakBot(TeDiSync plugin) {
 
     private static TeamSpeakDatabase database;
-    private static HashMap<UUID, String> requests;
+    private static ConcurrentHashMap<UUID, String> requests;
     private static TS3ApiAsync asyncApi;
     private static TS3Query query;
-    private static HashMap<String, Integer> groupIDs;
+    private static ConcurrentHashMap<String, Integer> groupIDs;
+    private static ConcurrentSkipListSet<UUID> updatePlayers;
 
     private static Integer newbieGroup;
 
@@ -83,8 +87,9 @@ public record TeamSpeakBot(TeDiSync plugin) {
         new TeamSpeakCommandRegistration(this).registerCommands();
         plugin.getProxy().getPluginManager().registerListener(plugin, new BungeeListener(this));
 
-        requests = new HashMap<>();
-        groupIDs = new HashMap<>();
+        requests = new ConcurrentHashMap<>();
+        groupIDs = new ConcurrentHashMap<>();
+        updatePlayers = new ConcurrentSkipListSet<>();
         Configuration rankConfig = plugin.getConfig().getSection("teamspeak.rankIDs");
         rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getInt(s)));
 
@@ -357,7 +362,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
         return database;
     }
 
-    public HashMap<UUID, String> getRequests() {
+    public ConcurrentHashMap<UUID, String> getRequests() {
         return requests;
     }
 
@@ -367,5 +372,9 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
     public Integer getNewbieGroup() {
         return newbieGroup;
+    }
+
+    public Collection<UUID> getUpdatePlayers() {
+        return updatePlayers;
     }
 }
