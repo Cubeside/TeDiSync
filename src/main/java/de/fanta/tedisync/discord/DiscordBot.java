@@ -344,11 +344,11 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
-        if (discordUser == null || !giveaway.getLastEntry().containsKey(discordUser.getIdLong())) {
+        if (discordUser == null) {
             return;
         }
         Long lastEntry = giveaway.getLastEntry().get(discordUser.getIdLong());
-        if (!isCurrentDay(lastEntry)) {
+        if (!isCurrentDay(lastEntry != null ? lastEntry : 0)) {
             ProxiedPlayer player = ProxyServer.getInstance().getPlayer(uuid);
             if (player != null && player.isConnected()) {
                 ChatUtil.sendNormalMessage(player, "Hey, du hast dich heute noch nicht für das Gewinnspiel " + ChatUtil.BLUE + giveaway.getName() + ChatUtil.GREEN + " im Discord eingetragen!");
