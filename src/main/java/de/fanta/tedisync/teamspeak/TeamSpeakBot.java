@@ -156,6 +156,16 @@ public record TeamSpeakBot(TeDiSync plugin) {
                             updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client);
                         } else {
                             removeAllTeamSpeakGroups(client.getUniqueIdentifier());
+                        }
+
+                        boolean hasGroup = false;
+                        for (int serverGroup : client.getServerGroups()) {
+                            if (groupIDs.containsValue(serverGroup)) {
+                                hasGroup = true;
+                                break;
+                            }
+                        }
+                        if (!hasGroup)  {
                             String message = plugin.getConfig().getString("teamspeak.message");
                             asyncApi.sendPrivateMessage(e.getClientId(), message);
                         }
