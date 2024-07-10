@@ -54,6 +54,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
     private static ConcurrentSkipListSet<UUID> updatePlayers;
 
     private static Integer newbieGroup;
+    private static Collection<Integer> ignoreGroups;
 
     public void initTeamSpeakBot() {
         database = new TeamSpeakDatabase(new SQLConfigBungee(plugin.getConfig().getSection("teamspeak.database")));
@@ -93,6 +94,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
         rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getInt(s)));
 
         newbieGroup = plugin.getConfig().getInt("teamspeak.newbieGroup");
+        ignoreGroups = plugin.getConfig().getIntList("teamspeak.ignoreGroups");
 
         asyncApi.addTS3Listeners(new TS3EventAdapter() {
             @Override
@@ -165,7 +167,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                                 break;
                             }
                         }
-                        if (!hasGroup)  {
+                        if (!hasGroup && !hasIgnoreGroup(client))  {
                             String message = plugin.getConfig().getString("teamspeak.message");
                             asyncApi.sendPrivateMessage(e.getClientId(), message);
                         }
@@ -385,5 +387,16 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
     public Collection<UUID> getUpdatePlayers() {
         return updatePlayers;
+    }
+
+    public boolean hasIgnoreGroup(ClientInfo clientInfo) {
+        boolean hasIgnoreGroup = false;
+        for (int serverGroup : clientInfo.getServerGroups()) {
+            if (ignoreGroups.contains(serverGroup)) {
+                return true;
+            }
+        }
+
+        return hasIgnoreGroup;
     }
 }

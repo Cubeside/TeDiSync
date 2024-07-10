@@ -30,6 +30,8 @@ teamspeak:
     admin: 22
     owner: 379
   newbieGroup: 11
+  ignoreGroups:
+    - 201
   message: Du bist neu auf unserem TeamSpeak. Um dich freizuschalten gib !register <MinecraftName> ein und akzeptiere die anfrage in Minecraft.
 discord:
   enabled: false
