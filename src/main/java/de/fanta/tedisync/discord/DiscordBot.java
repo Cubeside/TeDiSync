@@ -4,6 +4,20 @@ import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.discord.commands.DiscordCommandRegistration;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
+import java.awt.Color;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import javax.annotation.Nonnull;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -30,28 +44,15 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.event.EventHandler;
 
-import javax.annotation.Nonnull;
-import java.awt.*;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-
 public class DiscordBot extends ListenerAdapter implements Listener {
     private static JDA discordAPI;
     private final TeDiSync plugin;
-    private static HashMap<UUID, User> requests;
-    private static HashMap<String, Giveaway> giveaways;
-    private static HashMap<UUID, String> userEditGiveaway;
-    private static HashMap<Long, UUID> discordIdToUUID;
-    private static HashMap<UUID, Long> UUIDToDiscordID;
-    private static final Collection<UUID> playerNotificationList = new ArrayList<>();
+    private static Map<UUID, User> requests;
+    private static Map<String, Giveaway> giveaways;
+    private static Map<UUID, String> userEditGiveaway;
+    private static Map<Long, UUID> discordIdToUUID;
+    private static Map<UUID, Long> UUIDToDiscordID;
+    private static final Collection<UUID> playerNotificationList = ConcurrentHashMap.newKeySet();
 
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
@@ -61,11 +62,11 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         discordAPI = JDABuilder.createDefault(plugin.getConfig().getString("discord.login_token")).enableIntents(GatewayIntent.MESSAGE_CONTENT).build();
         plugin.getLogger().info("DiscordBot Logged in.");
         discordAPI.addEventListener(this);
-        requests = new HashMap<>();
-        giveaways = new HashMap<>();
-        userEditGiveaway = new HashMap<>();
-        discordIdToUUID = new HashMap<>();
-        UUIDToDiscordID = new HashMap<>();
+        requests = new ConcurrentHashMap<>();
+        giveaways = new ConcurrentHashMap<>();
+        userEditGiveaway = new ConcurrentHashMap<>();
+        discordIdToUUID = new ConcurrentHashMap<>();
+        UUIDToDiscordID = new ConcurrentHashMap<>();
 
         Configuration config = TeDiSync.getPlugin().getConfig().getSection("discorduser");
         for (String id : config.getKeys()) {
@@ -77,15 +78,15 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         ProxyServer.getInstance().getPluginManager().registerListener(plugin, this);
     }
 
-    public static HashMap<String, Giveaway> getGiveaways() {
+    public static Map<String, Giveaway> getGiveaways() {
         return giveaways;
     }
 
-    public static HashMap<UUID, String> getUserEditGiveaway() {
+    public static Map<UUID, String> getUserEditGiveaway() {
         return userEditGiveaway;
     }
 
-    public static HashMap<UUID, User> getRequests() {
+    public static Map<UUID, User> getRequests() {
         return requests;
     }
 
@@ -293,11 +294,11 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         return sameDay && sameMonth && sameYear;
     }
 
-    public static HashMap<Long, UUID> getDiscordIdToUUID() {
+    public static Map<Long, UUID> getDiscordIdToUUID() {
         return discordIdToUUID;
     }
 
-    public static HashMap<UUID, Long> getUUIDToDiscordID() {
+    public static Map<UUID, Long> getUUIDToDiscordID() {
         return UUIDToDiscordID;
     }
 
