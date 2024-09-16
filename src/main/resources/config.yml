@@ -39,6 +39,12 @@ discord:
   giveawaychannel: CHANGETHIS
   registerchannel: CHANGETHIS
   invitelink: 'http://cubesi.de/discord'
+  database:
+    host: localhost
+    user: CHANGETHIS
+    password: CHANGETHIS
+    database: CHANGETHIS
+    tableprefix: teamspeak
 
 
 

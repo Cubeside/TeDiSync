@@ -2,6 +2,7 @@ package de.fanta.tedisync.discord;
 
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.discord.commands.DiscordCommandRegistration;
+import de.fanta.tedisync.teamspeak.TeamSpeakDatabase;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
 import java.awt.Color;
@@ -18,6 +19,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import javax.annotation.Nonnull;
+
+import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -47,6 +50,7 @@ import net.md_5.bungee.event.EventHandler;
 public class DiscordBot extends ListenerAdapter implements Listener {
     private static JDA discordAPI;
     private final TeDiSync plugin;
+    private static DiscordDatabase database;
     private static Map<UUID, User> requests;
     private static Map<String, Giveaway> giveaways;
     private static Map<UUID, String> userEditGiveaway;
@@ -56,6 +60,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
 
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
+        database = new DiscordDatabase(new SQLConfigBungee(plugin.getConfig().getSection("discord.database")));
         new DiscordCommandRegistration(plugin).registerCommands();
 
         plugin.getLogger().info("Login DiscordBot...");
@@ -384,5 +389,9 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway notifications could not be saved");
         }
         return playerNotificationList.contains(uuid);
+    }
+
+    public static DiscordDatabase getDatabase() {
+        return database;
     }
 }
