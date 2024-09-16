@@ -1,6 +1,5 @@
 package de.fanta.tedisync.discord;
 
-import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import de.iani.cubesideutils.sql.MySQLConnection;
 import de.iani.cubesideutils.sql.SQLConfig;
 import de.iani.cubesideutils.sql.SQLConnection;
@@ -47,19 +46,14 @@ public class DiscordDatabase {
             smt.executeUpdate("CREATE TABLE IF NOT EXISTS " + config.getTablePrefix() + "_user" + " (" +
                     "`uuid` char(36)," +
                     "`dcID` BIGINT(64)," +
-                    "PRIMARY KEY (`dcID`)," +
-                    "INDEX (`uuid`)" +
+                    "PRIMARY KEY (`uuid`)" +
                     ")");
             smt.close();
             return null;
         });
     }
 
-    public void insertUser(ProxiedPlayer player, long dcID) throws SQLException {
-        insertUser(player.getUniqueId(), player.getName(), dcID);
-    }
-
-    public void insertUser(UUID uuid, String playerName, long dcID) throws SQLException {
+    public void insertUser(UUID uuid, long dcID) throws SQLException {
         this.connection.runCommands((connection, sqlConnection) -> {
             PreparedStatement smt = sqlConnection.getOrCreateStatement(insertUserQuery);
             smt.setString(1, uuid.toString());
@@ -99,18 +93,17 @@ public class DiscordDatabase {
         });
     }
 
-    public Collection<DiscordUserInfo> getUsersByUUID(UUID uuid) throws SQLException {
+    public DiscordUserInfo getUsersByUUID(UUID uuid) throws SQLException {
         return this.connection.runCommands((connection, sqlConnection) -> {
-            Collection<DiscordUserInfo> teamSpeakUserInfos = new ArrayList<>();
-            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByUUIDQuery);
+            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByDCIDQuery);
             statement.setString(1, uuid.toString());
             ResultSet rs = statement.executeQuery();
-            while (rs.next()) {
+            if (rs.next()) {
                 UUID playerUUID = UUID.fromString(rs.getString("uuid"));
                 String id = rs.getString("dcID");
-                teamSpeakUserInfos.add(new DiscordUserInfo(playerUUID, id));
+                return new DiscordUserInfo(playerUUID, id);
             }
-            return teamSpeakUserInfos;
+            return null;
         });
     }
 
