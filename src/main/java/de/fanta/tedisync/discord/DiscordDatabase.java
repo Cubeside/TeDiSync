@@ -3,14 +3,11 @@ package de.fanta.tedisync.discord;
 import de.iani.cubesideutils.sql.MySQLConnection;
 import de.iani.cubesideutils.sql.SQLConfig;
 import de.iani.cubesideutils.sql.SQLConnection;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.UUID;
 
 public class DiscordDatabase {
@@ -95,7 +92,7 @@ public class DiscordDatabase {
 
     public DiscordUserInfo getUsersByUUID(UUID uuid) throws SQLException {
         return this.connection.runCommands((connection, sqlConnection) -> {
-            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByDCIDQuery);
+            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByUUIDQuery);
             statement.setString(1, uuid.toString());
             ResultSet rs = statement.executeQuery();
             if (rs.next()) {
