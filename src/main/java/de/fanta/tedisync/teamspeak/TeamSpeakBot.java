@@ -5,20 +5,19 @@ import com.github.theholywaffle.teamspeak3.TS3Config;
 import com.github.theholywaffle.teamspeak3.TS3Query;
 import com.github.theholywaffle.teamspeak3.api.ClientProperty;
 import com.github.theholywaffle.teamspeak3.api.event.ClientJoinEvent;
-import com.github.theholywaffle.teamspeak3.api.event.ClientMovedEvent;
 import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
 import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
+import de.fanta.tedisync.LuckPermsListener;
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.teamspeak.commands.TeamSpeakCommandRegistration;
-import de.fanta.tedisync.teamspeak.database.BungeeListener;
-import de.fanta.tedisync.teamspeak.database.TeamSpeakDatabase;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
 import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import de.iani.cubesideutils.commands.ArgsParser;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
+
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
@@ -167,7 +167,7 @@ public record TeamSpeakBot(TeDiSync plugin) {
                                 break;
                             }
                         }
-                        if (!hasGroup && !hasIgnoreGroup(client))  {
+                        if (!hasGroup && !hasIgnoreGroup(client)) {
                             String message = plugin.getConfig().getString("teamspeak.message");
                             asyncApi.sendPrivateMessage(e.getClientId(), message);
                         }
@@ -180,28 +180,6 @@ public record TeamSpeakBot(TeDiSync plugin) {
                         plugin.getLogger().log(Level.INFO, "Error by Join User from" + " (" + e.getClientId() + ") " + ex.getError().getMessage() + " " + errorID, e);
                     }
                 }
-            }
-
-            @Override
-            public void onClientMoved(ClientMovedEvent e) {
-                /*
-                 * ClientInfo client;
-                 * try {
-                 * client = asyncApi.getClientInfo(e.getClientId()).get();
-                 * } catch (InterruptedException ex) {
-                 * plugin.getLogger().log(Level.SEVERE, "Client " + e.getClientId() + " konnte nicht geladen werden!", ex);
-                 * return;
-                 * }
-                 *
-                 * ChannelInfo targetChannel;
-                 * try {
-                 * targetChannel = asyncApi.getChannelInfo(e.getTargetChannelId()).get();
-                 * } catch (InterruptedException ex) {
-                 * throw new RuntimeException(ex);
-                 * }
-                 *
-                 * plugin.getLogger().info("Client (" + client.getNickname() + " " + client.getIp() + " " + client.getUniqueIdentifier() + ") Joined Channel " + targetChannel.getName());
-                 */
             }
         });
     }

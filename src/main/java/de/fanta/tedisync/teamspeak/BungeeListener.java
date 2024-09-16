@@ -1,7 +1,5 @@
-package de.fanta.tedisync.teamspeak.database;
+package de.fanta.tedisync.teamspeak;
 
-import de.fanta.tedisync.teamspeak.TeamSpeakBot;
-import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;

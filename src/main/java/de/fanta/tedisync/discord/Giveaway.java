@@ -22,7 +22,7 @@ import java.util.logging.Level;
 
 public class Giveaway {
     private final String name;
-    private String notificationButton;
+    private final String notificationButton;
     private String message;
     private String title;
     private String buttonText;

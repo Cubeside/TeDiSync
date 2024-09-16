@@ -1,6 +1,5 @@
-package de.fanta.tedisync.teamspeak.database;
+package de.fanta.tedisync.teamspeak;
 
-import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import de.iani.cubesideutils.sql.MySQLConnection;
 import de.iani.cubesideutils.sql.SQLConfig;
 import de.iani.cubesideutils.sql.SQLConnection;
