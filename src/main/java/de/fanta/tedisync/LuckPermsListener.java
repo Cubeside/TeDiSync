@@ -23,6 +23,7 @@ public record LuckPermsListener(TeamSpeakBot teamSpeakBot) {
             ProxyServer.getInstance().getScheduler().schedule(teamSpeakBot.plugin(), () -> {
                 teamSpeakBot.getUpdatePlayers().remove(event.getUser().getUniqueId());
                 try {
+                    //Update TeamSpeak group
                     Collection<TeamSpeakUserInfo> teamSpeakUserInfos = teamSpeakBot.getDatabase().getUsersByUUIS(event.getUser().getUniqueId());
                     teamSpeakUserInfos.forEach(teamSpeakUserInfo -> {
                         if (teamSpeakBot.getAsyncApi().isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
@@ -35,6 +36,8 @@ public record LuckPermsListener(TeamSpeakBot teamSpeakBot) {
                             }
                         }
                     });
+
+                    //TODO Update Discord Group
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }

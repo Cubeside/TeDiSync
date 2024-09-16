@@ -1,5 +1,6 @@
-package de.fanta.tedisync.teamspeak;
+package de.fanta.tedisync.discord;
 
+import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import de.iani.cubesideutils.sql.MySQLConnection;
 import de.iani.cubesideutils.sql.SQLConfig;
 import de.iani.cubesideutils.sql.SQLConnection;
@@ -13,33 +14,33 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 
-public class TeamSpeakDatabase {
+public class DiscordDatabase {
 
     private final SQLConfig config;
     private final SQLConnection connection;
     private final String insertUserQuery;
-    private final String getUserByTSIDQuery;
-    private final String getUserByTSIDANDUUIDQuery;
+    private final String getUserByDCIDQuery;
+    private final String getUserByDCIDANDUUIDQuery;
     private final String getUserByUUIDQuery;
-    private final String deleteUserbyTSIDQuery;
+    private final String deleteUserbyDCIDQuery;
     private final String updateNameQuery;
 
-    public TeamSpeakDatabase(SQLConfig config) {
+    public DiscordDatabase(SQLConfig config) {
         this.config = config;
 
         try {
             this.connection = new MySQLConnection(config);
             createTablesIfNotExist();
         } catch (SQLException ex) {
-            throw new RuntimeException("Could not initialize TeamSpeak database", ex);
+            throw new RuntimeException("Could not initialize Discord database", ex);
         }
 
-        insertUserQuery = "INSERT INTO " + config.getTablePrefix() + "_user" + " (uuid, tsID, lastMcName) VALUE (?, ?, ?)";
-        getUserByTSIDQuery = "SELECT * FROM " + config.getTablePrefix() + "_user" + " WHERE tsID = ?";
-        getUserByTSIDANDUUIDQuery = "SELECT * FROM " + config.getTablePrefix() + "_user" + " WHERE tsID = ? AND uuid = ?";
+        insertUserQuery = "INSERT INTO " + config.getTablePrefix() + "_user" + " (uuid, dcID, lastMcName) VALUE (?, ?, ?)";
+        getUserByDCIDQuery = "SELECT * FROM " + config.getTablePrefix() + "_user" + " WHERE dcID = ?";
+        getUserByDCIDANDUUIDQuery = "SELECT * FROM " + config.getTablePrefix() + "_user" + " WHERE dcID = ? AND uuid = ?";
         getUserByUUIDQuery = "SELECT * FROM " + config.getTablePrefix() + "_user" + " WHERE uuid = ?";
-        deleteUserbyTSIDQuery = "DELETE FROM " + config.getTablePrefix() + "_user" + " WHERE `tsID` = ?";
-        updateNameQuery = "UPDATE " + config.getTablePrefix() + "_user" + " SET `lastMcName` = ? WHERE tsID = ? AND uuid = ?";
+        deleteUserbyDCIDQuery = "DELETE FROM " + config.getTablePrefix() + "_user" + " WHERE `dcID` = ?";
+        updateNameQuery = "UPDATE " + config.getTablePrefix() + "_user" + " SET `lastMcName` = ? WHERE dcID = ? AND uuid = ?";
     }
 
     private void createTablesIfNotExist() throws SQLException {
@@ -47,9 +48,9 @@ public class TeamSpeakDatabase {
             Statement smt = connection.createStatement();
             smt.executeUpdate("CREATE TABLE IF NOT EXISTS " + config.getTablePrefix() + "_user" + " (" +
                     "`uuid` char(36)," +
-                    "`tsID` varchar(64)," +
+                    "`dcID` BIGINT(64)," +
                     "`lastMcName` varchar(16)," +
-                    "PRIMARY KEY (`tsID`)," +
+                    "PRIMARY KEY (`dcID`)," +
                     "INDEX (`uuid`)" +
                     ")");
             smt.close();
@@ -57,15 +58,15 @@ public class TeamSpeakDatabase {
         });
     }
 
-    public void insertUser(ProxiedPlayer player, String tsID) throws SQLException {
-        insertUser(player.getUniqueId(), player.getName(), tsID);
+    public void insertUser(ProxiedPlayer player, long dcID) throws SQLException {
+        insertUser(player.getUniqueId(), player.getName(), dcID);
     }
 
-    public void insertUser(UUID uuid, String playerName, String tsID) throws SQLException {
+    public void insertUser(UUID uuid, String playerName, long dcID) throws SQLException {
         this.connection.runCommands((connection, sqlConnection) -> {
             PreparedStatement smt = sqlConnection.getOrCreateStatement(insertUserQuery);
             smt.setString(1, uuid.toString());
-            smt.setString(2, tsID);
+            smt.setLong(2, dcID);
             smt.setString(3, playerName);
             smt.executeUpdate();
             return null;
@@ -73,14 +74,14 @@ public class TeamSpeakDatabase {
     }
 
 
-    public TeamSpeakUserInfo getUserByTSID(String tsID) throws SQLException {
+    public TeamSpeakUserInfo getUserByDCID(long dcID) throws SQLException {
         return this.connection.runCommands((connection, sqlConnection) -> {
-            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByTSIDQuery);
-            statement.setString(1, tsID);
+            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByDCIDQuery);
+            statement.setLong(1, dcID);
             ResultSet rs = statement.executeQuery();
             if (rs.next()) {
                 UUID uuid = UUID.fromString(rs.getString("uuid"));
-                String id = rs.getString("tsID");
+                String id = rs.getString("dcID");
                 String latestName = rs.getString("lastMcName");
                 return new TeamSpeakUserInfo(uuid, id, latestName);
             }
@@ -88,15 +89,15 @@ public class TeamSpeakDatabase {
         });
     }
 
-    public TeamSpeakUserInfo getUserByTSIDANDUUID(String tsID, UUID uuid) throws SQLException {
+    public TeamSpeakUserInfo getUserByDCIDANDUUID(long dcID, UUID uuid) throws SQLException {
         return this.connection.runCommands((connection, sqlConnection) -> {
-            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByTSIDANDUUIDQuery);
-            statement.setString(1, tsID);
+            PreparedStatement statement = sqlConnection.getOrCreateStatement(getUserByDCIDANDUUIDQuery);
+            statement.setLong(1, dcID);
             statement.setString(2, uuid.toString());
             ResultSet rs = statement.executeQuery();
             if (rs.next()) {
                 UUID tempUUID = UUID.fromString(rs.getString("uuid"));
-                String id = rs.getString("tsID");
+                String id = rs.getString("dcID");
                 String latestName = rs.getString("lastMcName");
                 return new TeamSpeakUserInfo(tempUUID, id, latestName);
             }
@@ -112,7 +113,7 @@ public class TeamSpeakDatabase {
             ResultSet rs = statement.executeQuery();
             while (rs.next()) {
                 UUID playerUUID = UUID.fromString(rs.getString("uuid"));
-                String id = rs.getString("tsID");
+                String id = rs.getString("dcID");
                 String latestName = rs.getString("lastMcName");
                 teamSpeakUserInfos.add(new TeamSpeakUserInfo(playerUUID, id, latestName));
             }
@@ -120,22 +121,22 @@ public class TeamSpeakDatabase {
         });
     }
 
-    public void deleteAccountByTSID(String tsID) throws SQLException {
+    public void deleteAccountByDCID(long dcID) throws SQLException {
         this.connection.runCommands((connection, sqlConnection) -> {
-            PreparedStatement smt = sqlConnection.getOrCreateStatement(deleteUserbyTSIDQuery);
+            PreparedStatement smt = sqlConnection.getOrCreateStatement(deleteUserbyDCIDQuery);
 
-            smt.setString(1, tsID);
+            smt.setLong(1, dcID);
             smt.executeUpdate();
             return null;
         });
     }
 
-    public void updateMcName(UUID uuid, String tsID, String newName) throws SQLException {
+    public void updateMcName(UUID uuid, long dcID, String newName) throws SQLException {
         this.connection.runCommands((connection, sqlConnection) -> {
             PreparedStatement smt = sqlConnection.getOrCreateStatement(updateNameQuery);
 
             smt.setString(1, newName);
-            smt.setString(2, tsID);
+            smt.setLong(2, dcID);
             smt.setString(3, uuid.toString());
             smt.executeUpdate();
             return null;
