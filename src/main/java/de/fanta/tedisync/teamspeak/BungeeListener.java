@@ -19,10 +19,10 @@ public class BungeeListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PostLoginEvent e) {
         try {
-            Collection<TeamSpeakUserInfo> teamSpeakUserInfos = teamSpeakBot.getDatabase().getUsersByUUIS(e.getPlayer().getUniqueId());
+            Collection<TeamSpeakUserInfo> teamSpeakUserInfos = teamSpeakBot.getDatabase().getUsersByUUID(e.getPlayer().getUniqueId());
             teamSpeakUserInfos.forEach(teamSpeakUserInfo -> teamSpeakBot.updateTSDescription(teamSpeakUserInfo, e.getPlayer()));
         } catch (SQLException ex) {
-            teamSpeakBot.plugin().getLogger().log(Level.SEVERE, "Error while load user Infos", ex);
+            teamSpeakBot.getPlugin().getLogger().log(Level.SEVERE, "Error while load user Infos", ex);
         }
     }
 }

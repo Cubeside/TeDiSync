@@ -12,7 +12,7 @@ public record TeamSpeakCommandRegistration(TeamSpeakBot teamSpeakBot) {
 
     public void registerCommands() {
         CommandRouter commandRouter = new CommandRouter();
-        pM.registerCommand(teamSpeakBot.plugin(), new CommandRouterCommand(commandRouter, "teamspeak", null, "ts"));
+        pM.registerCommand(teamSpeakBot.getPlugin(), new CommandRouterCommand(commandRouter, "teamspeak", null, "ts"));
         commandRouter.addCommandMapping(new TeDiSyncTeamSpeakRegisterConfirmCommand(true, teamSpeakBot), "register", "accept");
         commandRouter.addCommandMapping(new TeDiSyncTeamSpeakRegisterConfirmCommand(false, teamSpeakBot), "register", "deny");
         commandRouter.addCommandMapping(new TeamSpeakConvertCommand(teamSpeakBot), "convert");

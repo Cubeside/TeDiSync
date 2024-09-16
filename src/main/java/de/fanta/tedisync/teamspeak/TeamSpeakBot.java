@@ -10,7 +10,6 @@ import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
 import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
-import de.fanta.tedisync.LuckPermsListener;
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.teamspeak.commands.TeamSpeakCommandRegistration;
 import de.fanta.tedisync.utils.ChatUtil;
@@ -26,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
@@ -44,19 +42,20 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.config.Configuration;
 
-public record TeamSpeakBot(TeDiSync plugin) {
+public class TeamSpeakBot {
+    private final TeDiSync plugin;
 
     private static TeamSpeakDatabase database;
     private static ConcurrentHashMap<UUID, String> requests;
     private static TS3ApiAsync asyncApi;
     private static TS3Query query;
     private static ConcurrentHashMap<String, Integer> groupIDs;
-    private static ConcurrentSkipListSet<UUID> updatePlayers;
 
     private static Integer newbieGroup;
     private static Collection<Integer> ignoreGroups;
 
-    public void initTeamSpeakBot() {
+    public TeamSpeakBot(TeDiSync plugin) {
+        this.plugin = plugin;
         database = new TeamSpeakDatabase(new SQLConfigBungee(plugin.getConfig().getSection("teamspeak.database")));
 
         String host = plugin.getConfig().getString("teamspeak.login.host");
@@ -83,19 +82,21 @@ public record TeamSpeakBot(TeDiSync plugin) {
 
         asyncApi.registerAllEvents();
 
-        new LuckPermsListener(this).createEventHandler();
         new TeamSpeakCommandRegistration(this).registerCommands();
         plugin.getProxy().getPluginManager().registerListener(plugin, new BungeeListener(this));
 
         requests = new ConcurrentHashMap<>();
         groupIDs = new ConcurrentHashMap<>();
-        updatePlayers = new ConcurrentSkipListSet<>();
         Configuration rankConfig = plugin.getConfig().getSection("teamspeak.rankIDs");
         rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getInt(s)));
 
         newbieGroup = plugin.getConfig().getInt("teamspeak.newbieGroup");
         ignoreGroups = plugin.getConfig().getIntList("teamspeak.ignoreGroups");
 
+        initTeamSpeakBotListener();
+    }
+
+    public void initTeamSpeakBotListener() {
         asyncApi.addTS3Listeners(new TS3EventAdapter() {
             @Override
             public void onTextMessage(TextMessageEvent e) {
@@ -363,10 +364,6 @@ public record TeamSpeakBot(TeDiSync plugin) {
         return newbieGroup;
     }
 
-    public Collection<UUID> getUpdatePlayers() {
-        return updatePlayers;
-    }
-
     public boolean hasIgnoreGroup(ClientInfo clientInfo) {
         boolean hasIgnoreGroup = false;
         for (int serverGroup : clientInfo.getServerGroups()) {
@@ -376,5 +373,9 @@ public record TeamSpeakBot(TeDiSync plugin) {
         }
 
         return hasIgnoreGroup;
+    }
+
+    public TeDiSync getPlugin() {
+        return plugin;
     }
 }

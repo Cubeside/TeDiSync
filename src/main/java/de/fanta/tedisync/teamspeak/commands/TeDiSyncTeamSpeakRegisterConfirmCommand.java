@@ -64,7 +64,7 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
                     ChatUtil.sendNormalMessage(player, "Die Anfrage wurde angenommen.");
                     teamSpeakBot.getAsyncApi().sendPrivateMessage(client.getId(), "Die Anfrage zum Verbinden wurde von " + player.getName() + " angenommen.");
                 } catch (SQLException e) {
-                    teamSpeakBot.plugin().getLogger().log(Level.SEVERE, "Daten konnten nicht gespeichert werden.", e);
+                    teamSpeakBot.getPlugin().getLogger().log(Level.SEVERE, "Daten konnten nicht gespeichert werden.", e);
                     ChatUtil.sendErrorMessage(player, "Daten konnten nicht gespeichert werden.");
                 }
             } else {

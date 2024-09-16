@@ -45,7 +45,7 @@ public class TeamSpeakUnlinkCommand extends SubCommand {
                 ChatUtil.sendNormalMessage(player, "Du hast den Account " + teamSpeakUserInfo.tsID() + " entfernt!");
             } else if (player.hasPermission(DELETE_OTHER_ACCOUNTS_PERMISSION)) {
                 teamSpeakBot.getDatabase().deleteAccountByTSID(teamSpeakUserInfo.tsID());
-                ProxiedPlayer proxiedPlayer = teamSpeakBot.plugin().getProxy().getPlayer(teamSpeakUserInfo.uuid());
+                ProxiedPlayer proxiedPlayer = teamSpeakBot.getPlugin().getProxy().getPlayer(teamSpeakUserInfo.uuid());
                 teamSpeakBot.removeAllTeamSpeakGroups(teamSpeakUserInfo.tsID());
                 ChatUtil.sendNormalMessage(player, "Du hast den Account " + teamSpeakUserInfo.tsID() + " von " + (proxiedPlayer != null ? proxiedPlayer.getName() : teamSpeakUserInfo.uuid()) + " entfernt!");
             } else {

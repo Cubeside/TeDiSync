@@ -51,7 +51,7 @@ public class TeamSpeakLinkCommand extends SubCommand {
             if (e.getError().getId() == 1540) {
                 ChatUtil.sendErrorMessage(player, "Ungültige ID");
             } else {
-                teamSpeakBot.plugin().getLogger().log(Level.SEVERE, "Error by loading client!", e);
+                teamSpeakBot.getPlugin().getLogger().log(Level.SEVERE, "Error by loading client!", e);
             }
             return true;
         }
@@ -71,7 +71,7 @@ public class TeamSpeakLinkCommand extends SubCommand {
             throw new RuntimeException(e);
         }
 
-        ProxiedPlayer proxiedPlayer = teamSpeakBot.plugin().getProxy().getPlayer(name);
+        ProxiedPlayer proxiedPlayer = teamSpeakBot.getPlugin().getProxy().getPlayer(name);
         if (proxiedPlayer != null && proxiedPlayer.isConnected()) {
             teamSpeakBot.sendRequestToPlayer(proxiedPlayer, clientInfo);
             ChatUtil.sendNormalMessage(player, "Eine Anfrage wurde an " + proxiedPlayer.getName() + " gesendet!");
@@ -96,7 +96,7 @@ public class TeamSpeakLinkCommand extends SubCommand {
 
         if (i == 2) {
             ArrayList<String> li = new ArrayList<>();
-            for (ProxiedPlayer player : teamSpeakBot.plugin().getProxy().getPlayers()) {
+            for (ProxiedPlayer player : teamSpeakBot.getPlugin().getProxy().getPlayers()) {
                 li.add(player.getName());
             }
             return li;

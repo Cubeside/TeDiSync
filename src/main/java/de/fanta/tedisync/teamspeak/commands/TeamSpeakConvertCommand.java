@@ -28,7 +28,7 @@ public class TeamSpeakConvertCommand extends SubCommand {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String alias, String commandString, ArgsParser args) {
-        SQLConfig sqlConfig = new SQLConfigBungee(teamSpeakBot.plugin().getConfig().getSection("teamspeak.oldDatabase"));
+        SQLConfig sqlConfig = new SQLConfigBungee(teamSpeakBot.getPlugin().getConfig().getSection("teamspeak.oldDatabase"));
 
         SQLConnection connection;
         try {

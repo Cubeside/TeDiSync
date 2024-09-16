@@ -13,6 +13,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.logging.Level;
 
 public final class TeDiSync extends Plugin {
@@ -21,9 +24,14 @@ public final class TeDiSync extends Plugin {
 
     private Configuration config;
 
+    private static ConcurrentSkipListSet<UUID> updatePlayers;
+    private TeamSpeakBot teamSpeakBot;
+    private DiscordBot discordBot;
+
     @Override
     public void onEnable() {
         plugin = this;
+        updatePlayers = new ConcurrentSkipListSet<>();
 
         try {
             Class.forName(LuckPerms.class.getName());
@@ -41,12 +49,14 @@ public final class TeDiSync extends Plugin {
         }
 
         if (config.getBoolean("teamspeak.enabled")) {
-            new TeamSpeakBot(this).initTeamSpeakBot();
+            teamSpeakBot = new TeamSpeakBot(this);
         }
 
         if (config.getBoolean("discord.enabled")) {
-            new DiscordBot(this);
+            discordBot = new DiscordBot(this);
         }
+
+        new LuckPermsListener(this, teamSpeakBot, discordBot).createEventHandler();
     }
 
     @Override
@@ -77,5 +87,9 @@ public final class TeDiSync extends Plugin {
 
     public Configuration getConfig() {
         return config;
+    }
+
+    public Collection<UUID> getUpdatePlayers() {
+        return updatePlayers;
     }
 }

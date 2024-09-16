@@ -34,7 +34,7 @@ public class TeamSpeakListAccountsCommand extends SubCommand {
         }
 
         try {
-            Collection<TeamSpeakUserInfo> teamSpeakUserInfos = teamSpeakBot.getDatabase().getUsersByUUIS(player.getUniqueId());
+            Collection<TeamSpeakUserInfo> teamSpeakUserInfos = teamSpeakBot.getDatabase().getUsersByUUID(player.getUniqueId());
             if (teamSpeakUserInfos.isEmpty()) {
                 ChatUtil.sendNormalMessage(player, "Du hast keine verbundenen TeamSpeak Accounts");
             } else {
