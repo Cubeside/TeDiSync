@@ -373,7 +373,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             return;
         }
 
-        if (!userInfo.notification()) {
+        if (userInfo == null || !userInfo.notification()) {
             return;
         }
 
