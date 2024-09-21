@@ -1,6 +1,8 @@
 package de.fanta.tedisync.discord.commands;
 
+import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.discord.DiscordBot;
+import de.fanta.tedisync.discord.DiscordUserInfo;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
@@ -10,10 +12,15 @@ import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.sql.SQLException;
+import java.util.logging.Level;
+
 public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
     private final boolean confirm;
+    private final DiscordBot discordBot;
 
-    public TeDiSyncDiscordRegisterConfirmCommand(boolean confirm) {
+    public TeDiSyncDiscordRegisterConfirmCommand(DiscordBot discordBot, boolean confirm) {
+        this.discordBot = discordBot;
         this.confirm = confirm;
     }
 
@@ -33,6 +40,13 @@ public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
                     embedBuilder.setColor(ChatUtil.GREEN.getColor());
                     embedBuilder.setDescription("Die Anfrage zum Verbinden wurde von " + player.getName() + " angenommen.");
                     user.openPrivateChannel().complete().sendMessageEmbeds(embedBuilder.build()).queue();
+
+                    try {
+                        DiscordUserInfo discordUserInfo = DiscordBot.getDatabase().getUsersByUUID(player.getUniqueId());
+                        discordBot.updateDiscordGroup(player.getUniqueId(), discordUserInfo);
+                    } catch (SQLException e) {
+                        TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Error while get user", e);
+                    }
                 } else {
                     ChatUtil.sendErrorMessage(player, "Daten konnten nicht gespeichert werden.");
                     EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Fehler");
