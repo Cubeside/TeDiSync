@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import javax.annotation.Nonnull;
 
 import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -46,6 +45,7 @@ import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.event.EventHandler;
+import org.jetbrains.annotations.NotNull;
 
 public class DiscordBot extends ListenerAdapter implements Listener {
     private static JDA discordAPI;
@@ -195,7 +195,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     }
 
     @Override
-    public void onModalInteraction(@Nonnull ModalInteractionEvent event) {
+    public void onModalInteraction(@NotNull ModalInteractionEvent event) {
         if (event.getModalId().equals("TeDiSync-Register")) {
             User author = event.getUser();
             String playerName = event.getValue("TeDiSync-MinecraftName").getAsString();
@@ -379,6 +379,9 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                 ChatUtil.sendNormalMessage(player, "Hey, du hast dich heute noch nicht für das Gewinnspiel " + ChatUtil.BLUE + giveaway.getName() + ChatUtil.GREEN + " im Discord eingetragen!");
             }
         }
+    }
+
+    public void updateDiscordGroup(UUID uniqueId, DiscordUserInfo discordUserInfo) {
     }
 
     public boolean toggleNotification(UUID uuid) {

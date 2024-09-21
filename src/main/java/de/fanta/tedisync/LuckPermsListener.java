@@ -3,6 +3,7 @@ package de.fanta.tedisync;
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.discord.DiscordBot;
+import de.fanta.tedisync.discord.DiscordUserInfo;
 import de.fanta.tedisync.teamspeak.TeamSpeakBot;
 import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import net.luckperms.api.LuckPermsProvider;
@@ -42,9 +43,9 @@ public record LuckPermsListener(TeDiSync plugin, TeamSpeakBot teamSpeakBot, Disc
 
                     if (discordBot != null) {
                         //TODO Update Discord Group
-
+                        DiscordUserInfo discordUserInfo = DiscordBot.getDatabase().getUsersByUUID(event.getUser().getUniqueId());
+                        discordBot.updateDiscordGroup(event.getUser().getUniqueId(), discordUserInfo);
                     }
-
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
