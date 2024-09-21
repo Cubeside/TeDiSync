@@ -41,8 +41,8 @@ public record LuckPermsListener(TeDiSync plugin, TeamSpeakBot teamSpeakBot, Disc
                         });
                     }
 
+                    //Update Discord group
                     if (discordBot != null) {
-                        //TODO Update Discord Group
                         DiscordUserInfo discordUserInfo = DiscordBot.getDatabase().getUsersByUUID(event.getUser().getUniqueId());
                         discordBot.updateDiscordGroup(event.getUser().getUniqueId(), discordUserInfo);
                     }

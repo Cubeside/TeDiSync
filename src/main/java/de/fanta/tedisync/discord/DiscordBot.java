@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,10 @@ import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.ISnowflake;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
@@ -34,6 +39,11 @@ import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.model.group.Group;
+import net.luckperms.api.query.Flag;
+import net.luckperms.api.query.QueryMode;
+import net.luckperms.api.query.QueryOptions;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -54,6 +64,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     private static Map<UUID, User> requests;
     private static Map<String, Giveaway> giveaways;
     private static Map<UUID, String> userEditGiveaway;
+    private static ConcurrentHashMap<String, Long> groupIDs;
 
 
     public DiscordBot(TeDiSync plugin) {
@@ -68,6 +79,9 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         requests = new ConcurrentHashMap<>();
         giveaways = new ConcurrentHashMap<>();
         userEditGiveaway = new ConcurrentHashMap<>();
+        groupIDs = new ConcurrentHashMap<>();
+        Configuration rankConfig = plugin.getConfig().getSection("discord.rankIDs");
+        rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getLong(s)));
 
         if (!plugin.getConfig().getBoolean("discord.convert")) {
             convertUser();
@@ -381,7 +395,63 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         }
     }
 
-    public void updateDiscordGroup(UUID uniqueId, DiscordUserInfo discordUserInfo) {
+    public void updateDiscordGroup(UUID uuid, DiscordUserInfo discordUserInfo) {
+        if (discordUserInfo == null) {
+            return;
+        }
+
+        try {
+            Guild guild = discordAPI.getGuildById(plugin.getConfig().getLong("discord.serverID"));
+            if (guild == null) {
+                throw new NullPointerException("discord guild is null");
+            }
+
+            Member member = guild.retrieveMemberById(discordUserInfo.dcID()).complete();
+            if (member == null) {
+                throw new NullPointerException("user is null");
+            }
+
+            net.luckperms.api.model.user.User lpUser;
+            if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
+                lpUser = LuckPermsProvider.get().getUserManager().getUser(uuid);
+            } else {
+                lpUser = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+            }
+
+            ArrayList<Group> userGroups = new ArrayList<>(lpUser.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));
+            userGroups.sort((a, b) -> Integer.compare(b.getWeight().orElse(0), a.getWeight().orElse(0)));
+            String group = "default";
+            for (Group g : userGroups) {
+                if (groupIDs.containsKey(g.getName())) {
+                    group = g.getName();
+                    break;
+                }
+            }
+            long groupID = groupIDs.get(group);
+            long[] ranks = member.getRoles().stream().mapToLong(ISnowflake::getIdLong).toArray();
+            List<Long> dcUserRanks = Arrays.stream(ranks).boxed().toList();
+
+            for (Long userRank : dcUserRanks) {
+                if (groupIDs.containsValue(userRank) && userRank != groupID) {
+                    Role role = guild.getRoleById(userRank);
+                    if (role == null) {
+                        return;
+                    }
+                    guild.removeRoleFromMember(member, role).queue();
+                }
+            }
+
+            if (!dcUserRanks.contains(groupID)) {
+                Role role = guild.getRoleById(groupID);
+                if (role == null) {
+                    return;
+                }
+                guild.addRoleToMember(member, role).queue();
+            }
+
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean toggleNotification(UUID uuid) {
