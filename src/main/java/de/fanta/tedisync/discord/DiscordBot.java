@@ -438,7 +438,9 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                         if (role == null) {
                             return;
                         }
-                        guild.removeRoleFromMember(member, role).queue();
+                        if (!groupIDs.get("default").equals(userRank)) {
+                            guild.removeRoleFromMember(member, role).queue();
+                        }
                     }
                 }
 
