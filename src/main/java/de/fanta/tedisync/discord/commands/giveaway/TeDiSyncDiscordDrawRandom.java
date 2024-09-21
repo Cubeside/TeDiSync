@@ -1,6 +1,7 @@
 package de.fanta.tedisync.discord.commands.giveaway;
 
 import de.fanta.tedisync.discord.DiscordBot;
+import de.fanta.tedisync.discord.DiscordUserInfo;
 import de.fanta.tedisync.discord.Giveaway;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
@@ -15,6 +16,7 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.sql.SQLException;
 import java.util.Collection;
 
 public class TeDiSyncDiscordDrawRandom extends SubCommand {
@@ -39,8 +41,13 @@ public class TeDiSyncDiscordDrawRandom extends SubCommand {
         }
 
         User user = DiscordBot.getDiscordAPI().retrieveUserById(giveaway.drawRandom()).complete();
-        if (DiscordBot.getDiscordIdToUUID().containsKey(user.getIdLong())) {
-            ClickEvent infoClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playerinfo " + DiscordBot.getDiscordIdToUUID().get(user.getIdLong()));
+        DiscordUserInfo discordUserInfo = null;
+        try {
+            discordUserInfo = DiscordBot.getDatabase().getUserByDCID(user.getIdLong());
+        } catch (SQLException ignore) {
+        }
+        if (discordUserInfo != null) {
+            ClickEvent infoClickEvent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/playerinfo " + discordUserInfo.uuid().toString());
             HoverEvent infoHoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Info"));
 
             BaseComponent component = ComponentUtil.setColor("Gewinner: " + user.getName() + "(" + user.getEffectiveName() + ") " + "Lose: " + giveaway.getEntryCount(user.getIdLong()), ChatUtil.GREEN);

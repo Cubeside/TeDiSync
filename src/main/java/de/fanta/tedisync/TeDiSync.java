@@ -62,7 +62,11 @@ public final class TeDiSync extends Plugin {
     @Override
     public void onDisable() {
         if (config.getBoolean("teamspeak.enabled")) {
-            new TeamSpeakBot(this).stopTeamSpeakBot();
+            teamSpeakBot.stopTeamSpeakBot();
+        }
+
+        if (config.getBoolean("discord.enabled")) {
+            discordBot.stopDiscordBot();
         }
     }
 

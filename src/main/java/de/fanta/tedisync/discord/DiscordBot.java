@@ -2,14 +2,14 @@ package de.fanta.tedisync.discord;
 
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.discord.commands.DiscordCommandRegistration;
-import de.fanta.tedisync.teamspeak.TeamSpeakDatabase;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
+
 import java.awt.Color;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,9 +54,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     private static Map<UUID, User> requests;
     private static Map<String, Giveaway> giveaways;
     private static Map<UUID, String> userEditGiveaway;
-    private static Map<Long, UUID> discordIdToUUID;
-    private static Map<UUID, Long> UUIDToDiscordID;
-    private static final Collection<UUID> playerNotificationList = ConcurrentHashMap.newKeySet();
+
 
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
@@ -65,22 +63,50 @@ public class DiscordBot extends ListenerAdapter implements Listener {
 
         plugin.getLogger().info("Login DiscordBot...");
         discordAPI = JDABuilder.createDefault(plugin.getConfig().getString("discord.login_token")).enableIntents(GatewayIntent.MESSAGE_CONTENT).build();
-        plugin.getLogger().info("DiscordBot Logged in.");
+        plugin.getLogger().info("DiscordBot Logged in as " + discordAPI.getSelfUser().getName());
         discordAPI.addEventListener(this);
         requests = new ConcurrentHashMap<>();
         giveaways = new ConcurrentHashMap<>();
         userEditGiveaway = new ConcurrentHashMap<>();
-        discordIdToUUID = new ConcurrentHashMap<>();
-        UUIDToDiscordID = new ConcurrentHashMap<>();
+
+        if (!plugin.getConfig().getBoolean("discord.convert")) {
+            convertUser();
+        }
+
+        loadGiveawaysFromConfig();
+        startNotificationTask();
+        ProxyServer.getInstance().getPluginManager().registerListener(plugin, this);
+    }
+
+    private void convertUser() {
+        Map<Long, UUID> discordIdToUUID = new ConcurrentHashMap<>();
 
         Configuration config = TeDiSync.getPlugin().getConfig().getSection("discorduser");
         for (String id : config.getKeys()) {
             discordIdToUUID.put(Long.valueOf(id), UUID.fromString(config.getString(id)));
-            UUIDToDiscordID.put(UUID.fromString(config.getString(id)), Long.valueOf(id));
         }
-        loadGiveawaysFromConfig();
-        startNotificationTask();
-        ProxyServer.getInstance().getPluginManager().registerListener(plugin, this);
+
+        List<String> notificationStringList = TeDiSync.getPlugin().getConfig().getStringList("notifications");
+        List<UUID> notificationList = new ArrayList<>();
+        for (String UUIDString : notificationStringList) {
+            notificationList.add(UUID.fromString(UUIDString));
+        }
+
+        discordIdToUUID.forEach((id, uuid) -> {
+            boolean notification = notificationList.contains(uuid);
+            try {
+                database.insertUser(uuid, id, notification);
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.SEVERE, "Error by add convert user to database!", e);
+            }
+        });
+
+        plugin.getConfig().set("discord.convert", true);
+        try {
+            plugin.saveConfig();
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error while save Config");
+        }
     }
 
     public static Map<String, Giveaway> getGiveaways() {
@@ -100,18 +126,11 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     }
 
     public static boolean saveUser(UUID uuid, Long id) {
-        Configuration config = TeDiSync.getPlugin().getConfig();
-        config.set("discorduser." + id, uuid.toString());
-
         try {
-            if (TeDiSync.getPlugin().saveConfig()) {
-                DiscordBot.getDiscordIdToUUID().put(id, uuid);
-                DiscordBot.getUUIDToDiscordID().put(uuid, id);
-                return true;
-            }
-        } catch (IOException e) {
-            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "User could not be saved");
-            return false;
+            database.insertUser(uuid, id, false);
+            return true;
+        } catch (SQLException e) {
+            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Error while saving user in Database", e);
         }
         return false;
     }
@@ -151,7 +170,12 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             }
 
             if (giveaway.getNotificationButton().equals(event.getComponentId())) {
-                UUID playerUUID = DiscordBot.discordIdToUUID.get(event.getUser().getIdLong());
+                DiscordUserInfo discordUserInfo = null;
+                try {
+                    discordUserInfo = database.getUserByDCID(event.getUser().getIdLong());
+                } catch (SQLException ignore) {
+                }
+                UUID playerUUID = discordUserInfo == null ? null : discordUserInfo.uuid();
                 if (playerUUID == null) {
                     long channelID = plugin.getConfig().getLong("discord.registerchannel", -1);
                     if (channelID == -1) {
@@ -242,13 +266,6 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             giveaway.setOpen(open);
             giveaways.put(giveawayName, giveaway);
         }
-
-        List<String> notificationStringList = TeDiSync.getPlugin().getConfig().getStringList("notifications");
-        List<UUID> notificationList = new ArrayList<>();
-        for (String UUIDString : notificationStringList) {
-            notificationList.add(UUID.fromString(UUIDString));
-        }
-        playerNotificationList.addAll(notificationList);
     }
 
     public HashMap<Long, Long> timeListToMap(List<String> timeList) {
@@ -299,14 +316,6 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         return sameDay && sameMonth && sameYear;
     }
 
-    public static Map<Long, UUID> getDiscordIdToUUID() {
-        return discordIdToUUID;
-    }
-
-    public static Map<UUID, Long> getUUIDToDiscordID() {
-        return UUIDToDiscordID;
-    }
-
     public static void sendRegisterMessage(TextChannel channel) {
         EmbedBuilder embedBuilder = new EmbedBuilder().setTitle("Registrieren");
         embedBuilder.setColor(ChatUtil.GREEN.getColor());
@@ -333,20 +342,30 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                 if (!giveaway.isOpen()) {
                     continue;
                 }
-                for (UUID uuid : getPlayerNotificationList()) {
-                    sendNotificationToPlayer(giveaway, uuid);
+                try {
+                    database.getGivewayNotificationUser().forEach(discordUserInfo -> sendNotificationToPlayer(giveaway, discordUserInfo.uuid()));
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.SEVERE, "Error while loading Notification User", e);
                 }
             }
         }, 0, 30, TimeUnit.MINUTES);
     }
 
     private void sendNotificationToPlayer(Giveaway giveaway, UUID uuid) {
-        if (!getPlayerNotificationList().contains(uuid)) {
+        DiscordUserInfo userInfo;
+        try {
+            userInfo = database.getUsersByUUID(uuid);
+        } catch (SQLException e) {
             return;
         }
+
+        if (!userInfo.notification()) {
+            return;
+        }
+
         User discordUser;
         try {
-            discordUser = discordAPI.retrieveUserById(UUIDToDiscordID.get(uuid)).submit().get();
+            discordUser = discordAPI.retrieveUserById(userInfo.dcID()).submit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -362,36 +381,24 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         }
     }
 
-    private static Collection<UUID> getPlayerNotificationList() {
-        return playerNotificationList;
-    }
-
     public boolean toggleNotification(UUID uuid) {
-        if (playerNotificationList.contains(uuid)) {
-            playerNotificationList.remove(uuid);
-        } else {
-            playerNotificationList.add(uuid);
-        }
-
-        Configuration config = TeDiSync.getPlugin().getConfig();
-        List<String> UUIDStrings = new ArrayList<>();
-        for (UUID uuidFromList : playerNotificationList) {
-            UUIDStrings.add(uuidFromList.toString());
-        }
-
-        config.set("notifications", UUIDStrings);
-
         try {
-            if (TeDiSync.getPlugin().saveConfig()) {
-                return playerNotificationList.contains(uuid);
-            }
-        } catch (IOException e) {
-            TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Giveaway notifications could not be saved");
+            DiscordUserInfo discordUserInfo = database.getUsersByUUID(uuid);
+            boolean notification = !discordUserInfo.notification();
+            database.updateNotificationUser(uuid, notification);
+            return notification;
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error while change notification option", e);
         }
-        return playerNotificationList.contains(uuid);
+        return false;
     }
 
     public static DiscordDatabase getDatabase() {
         return database;
+    }
+
+    public void stopDiscordBot() {
+        discordAPI.shutdownNow();
+        database.disconnect();
     }
 }
