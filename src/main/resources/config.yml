@@ -36,16 +36,16 @@ teamspeak:
 discord:
   enabled: false
   login_token: CHANGETHIS
-  serverID: CHANGETHIS
+  serverID: 175985264211132416
   giveawaychannel: CHANGETHIS
   registerchannel: CHANGETHIS
   invitelink: 'http://cubesi.de/discord'
   convert: false
   rankIDs:
     default: 1137641342382645308
-    vip: 440
+    vip: 1285142251357605918
     veteran: 1137452248520204439
-    creator: 303
+    creator: 1137472579272196246
     builder: 1137455331560136866
     buddy: 425669363891437568
     staff: 425000515106111488
