@@ -400,58 +400,59 @@ public class DiscordBot extends ListenerAdapter implements Listener {
             return;
         }
 
-        try {
-            Guild guild = discordAPI.getGuildById(plugin.getConfig().getLong("discord.serverID"));
-            if (guild == null) {
-                throw new NullPointerException("discord guild is null");
-            }
-
-            Member member = guild.retrieveMemberById(discordUserInfo.dcID()).complete();
-            if (member == null) {
-                throw new NullPointerException("user is null");
-            }
-
-            net.luckperms.api.model.user.User lpUser;
-            if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
-                lpUser = LuckPermsProvider.get().getUserManager().getUser(uuid);
-            } else {
-                lpUser = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
-            }
-
-            ArrayList<Group> userGroups = new ArrayList<>(lpUser.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));
-            userGroups.sort((a, b) -> Integer.compare(b.getWeight().orElse(0), a.getWeight().orElse(0)));
-            String group = "default";
-            for (Group g : userGroups) {
-                if (groupIDs.containsKey(g.getName())) {
-                    group = g.getName();
-                    break;
+        plugin.getProxy().getScheduler().runAsync(plugin, () -> {
+            try {
+                Guild guild = discordAPI.getGuildById(plugin.getConfig().getLong("discord.serverID"));
+                if (guild == null) {
+                    throw new NullPointerException("discord guild is null");
                 }
-            }
-            long groupID = groupIDs.get(group);
-            long[] ranks = member.getRoles().stream().mapToLong(ISnowflake::getIdLong).toArray();
-            List<Long> dcUserRanks = Arrays.stream(ranks).boxed().toList();
 
-            for (Long userRank : dcUserRanks) {
-                if (groupIDs.containsValue(userRank) && userRank != groupID) {
-                    Role role = guild.getRoleById(userRank);
+                Member member = guild.retrieveMemberById(discordUserInfo.dcID()).complete();
+                if (member == null) {
+                    throw new NullPointerException("user is null");
+                }
+
+                net.luckperms.api.model.user.User lpUser;
+                if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
+                    lpUser = LuckPermsProvider.get().getUserManager().getUser(uuid);
+                } else {
+                    lpUser = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+                }
+
+                ArrayList<Group> userGroups = new ArrayList<>(lpUser.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));
+                userGroups.sort((a, b) -> Integer.compare(b.getWeight().orElse(0), a.getWeight().orElse(0)));
+                String group = "default";
+                for (Group g : userGroups) {
+                    if (groupIDs.containsKey(g.getName())) {
+                        group = g.getName();
+                        break;
+                    }
+                }
+                long groupID = groupIDs.get(group);
+                long[] ranks = member.getRoles().stream().mapToLong(ISnowflake::getIdLong).toArray();
+                List<Long> dcUserRanks = Arrays.stream(ranks).boxed().toList();
+
+                for (Long userRank : dcUserRanks) {
+                    if (groupIDs.containsValue(userRank) && userRank != groupID) {
+                        Role role = guild.getRoleById(userRank);
+                        if (role == null) {
+                            return;
+                        }
+                        guild.removeRoleFromMember(member, role).queue();
+                    }
+                }
+
+                if (!dcUserRanks.contains(groupID)) {
+                    Role role = guild.getRoleById(groupID);
                     if (role == null) {
                         return;
                     }
-                    guild.removeRoleFromMember(member, role).queue();
+                    guild.addRoleToMember(member, role).queue();
                 }
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
             }
-
-            if (!dcUserRanks.contains(groupID)) {
-                Role role = guild.getRoleById(groupID);
-                if (role == null) {
-                    return;
-                }
-                guild.addRoleToMember(member, role).queue();
-            }
-
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     public boolean toggleNotification(UUID uuid) {
