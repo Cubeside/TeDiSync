@@ -96,4 +96,12 @@ public final class TeDiSync extends Plugin {
     public Collection<UUID> getUpdatePlayers() {
         return updatePlayers;
     }
+
+    public DiscordBot getDiscordBot() {
+        return discordBot;
+    }
+
+    public TeamSpeakBot getTeamSpeakBot() {
+        return teamSpeakBot;
+    }
 }

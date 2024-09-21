@@ -16,8 +16,8 @@ public record DiscordCommandRegistration(TeDiSync plugin) {
         pM.registerCommand(plugin, new CommandRouterCommand(commandRouter, "discord", null, "dc"));
         commandRouter.addCommandMapping(new TeDiSyncDiscordCommand(plugin));
         commandRouter.addCommandMapping(new TeDiSyncDiscordSendRegisterMessage(plugin), "sendregistermessage");
-        commandRouter.addCommandMapping(new TeDiSyncDiscordRegisterConfirmCommand(true), "register", "accept");
-        commandRouter.addCommandMapping(new TeDiSyncDiscordRegisterConfirmCommand(false), "register", "deny");
+        commandRouter.addCommandMapping(new TeDiSyncDiscordRegisterConfirmCommand(plugin.getDiscordBot(), true), "register", "accept");
+        commandRouter.addCommandMapping(new TeDiSyncDiscordRegisterConfirmCommand(plugin.getDiscordBot(), false), "register", "deny");
 
         commandRouter.addCommandMapping(new TeDiSyncDiscordCreateGiveaway(), "giveaway", "create");
         commandRouter.addCommandMapping(new TeDiSyncDiscordInfo(), "giveaway", "info");
