@@ -70,7 +70,6 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     public DiscordBot(TeDiSync plugin) {
         this.plugin = plugin;
         database = new DiscordDatabase(new SQLConfigBungee(plugin.getConfig().getSection("discord.database")));
-        new DiscordCommandRegistration(plugin).registerCommands();
 
         plugin.getLogger().info("Login DiscordBot...");
         discordAPI = JDABuilder.createDefault(plugin.getConfig().getString("discord.login_token")).enableIntents(GatewayIntent.MESSAGE_CONTENT).build();
@@ -90,6 +89,10 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         loadGiveawaysFromConfig();
         startNotificationTask();
         ProxyServer.getInstance().getPluginManager().registerListener(plugin, this);
+    }
+
+    public void registerCommands() {
+        new DiscordCommandRegistration(plugin).registerCommands();
     }
 
     private void convertUser() {

@@ -54,6 +54,7 @@ public final class TeDiSync extends Plugin {
 
         if (config.getBoolean("discord.enabled")) {
             discordBot = new DiscordBot(this);
+            discordBot.registerCommands();
         }
 
         new LuckPermsListener(this, teamSpeakBot, discordBot).createEventHandler();
