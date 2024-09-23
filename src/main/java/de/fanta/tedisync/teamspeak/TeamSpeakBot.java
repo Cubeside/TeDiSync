@@ -112,33 +112,33 @@ public class TeamSpeakBot {
                     return;
                 }
 
-                ClientInfo client = asyncApi.getClientInfo(e.getInvokerId()).getUninterruptibly();
-
-                if (client == null) {
-                    return;
-                }
-
-                if (!args.hasNext()) {
-                    asyncApi.sendPrivateMessage(client.getId(), "Du musst einen Spielernamen angeben! (!register NAME)");
-                    return;
-                }
-
-                String playerName = args.getNext();
-                ProxiedPlayer proxiedPlayer = plugin.getProxy().getPlayer(playerName);
-                try {
-                    if (database.getUserByTSID(client.getUniqueIdentifier()) == null) {
-                        if (proxiedPlayer == null || !proxiedPlayer.isConnected()) {
-                            asyncApi.sendPrivateMessage(client.getId(), "Der Spieler " + playerName + " ist nicht online.");
-                        } else {
-                            sendRequestToPlayer(proxiedPlayer, client);
-                            asyncApi.sendPrivateMessage(client.getId(), "Eine Anfrage zum Verbinden wurde in Minecraft an " + proxiedPlayer.getName() + " geschickt.");
-                        }
-                    } else {
-                        asyncApi.sendPrivateMessage(client.getId(), "Diese TeamSpeak-ID ist bereits mit einem Minecraft-Account verbunden");
+                asyncApi.getClientInfo(e.getInvokerId()).onSuccess(client -> {
+                    if (client == null) {
+                        return;
                     }
-                } catch (SQLException ex) {
-                    throw new RuntimeException(ex);
-                }
+
+                    if (!args.hasNext()) {
+                        asyncApi.sendPrivateMessage(client.getId(), "Du musst einen Spielernamen angeben! (!register NAME)");
+                        return;
+                    }
+
+                    String playerName = args.getNext();
+                    ProxiedPlayer proxiedPlayer = plugin.getProxy().getPlayer(playerName);
+                    try {
+                        if (database.getUserByTSID(client.getUniqueIdentifier()) == null) {
+                            if (proxiedPlayer == null || !proxiedPlayer.isConnected()) {
+                                asyncApi.sendPrivateMessage(client.getId(), "Der Spieler " + playerName + " ist nicht online.");
+                            } else {
+                                sendRequestToPlayer(proxiedPlayer, client);
+                                asyncApi.sendPrivateMessage(client.getId(), "Eine Anfrage zum Verbinden wurde in Minecraft an " + proxiedPlayer.getName() + " geschickt.");
+                            }
+                        } else {
+                            asyncApi.sendPrivateMessage(client.getId(), "Diese TeamSpeak-ID ist bereits mit einem Minecraft-Account verbunden");
+                        }
+                    } catch (SQLException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
             }
 
             @Override
@@ -148,34 +148,34 @@ public class TeamSpeakBot {
                 }
 
                 try {
-                    ClientInfo client = asyncApi.getClientByUId(e.getUniqueClientIdentifier()).getUninterruptibly();
-
-                    if (client == null) {
-                        return;
-                    }
-
-                    try {
-                        TeamSpeakUserInfo teamSpeakUserInfo = database.getUserByTSID(client.getUniqueIdentifier());
-                        if (teamSpeakUserInfo != null) {
-                            updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client, null);
-                        } else {
-                            removeAllTeamSpeakGroups(client.getUniqueIdentifier());
+                    asyncApi.getClientByUId(e.getUniqueClientIdentifier()).onSuccess(client -> {
+                        if (client == null) {
+                            return;
                         }
 
-                        boolean hasGroup = false;
-                        for (int serverGroup : client.getServerGroups()) {
-                            if (groupIDs.containsValue(serverGroup)) {
-                                hasGroup = true;
-                                break;
+                        try {
+                            TeamSpeakUserInfo teamSpeakUserInfo = database.getUserByTSID(client.getUniqueIdentifier());
+                            if (teamSpeakUserInfo != null) {
+                                updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client, null);
+                            } else {
+                                removeAllTeamSpeakGroups(client.getUniqueIdentifier());
                             }
+
+                            boolean hasGroup = false;
+                            for (int serverGroup : client.getServerGroups()) {
+                                if (groupIDs.containsValue(serverGroup)) {
+                                    hasGroup = true;
+                                    break;
+                                }
+                            }
+                            if (!hasGroup && !hasIgnoreGroup(client)) {
+                                String message = plugin.getConfig().getString("teamspeak.message");
+                                asyncApi.sendPrivateMessage(e.getClientId(), message);
+                            }
+                        } catch (SQLException ex) {
+                            throw new RuntimeException(ex);
                         }
-                        if (!hasGroup && !hasIgnoreGroup(client)) {
-                            String message = plugin.getConfig().getString("teamspeak.message");
-                            asyncApi.sendPrivateMessage(e.getClientId(), message);
-                        }
-                    } catch (SQLException ex) {
-                        throw new RuntimeException(ex);
-                    }
+                    });
                 } catch (TS3CommandFailedException ex) {
                     int errorID = ex.getError().getId();
                     if (errorID != 512 && errorID != 1540) {
@@ -194,49 +194,53 @@ public class TeamSpeakBot {
         database.disconnect();
     }
 
-    public void updateTeamSpeakGroup(UUID uuid, ClientInfo clientInfo, @Nullable User user) {
+    public void updateTeamSpeakGroup(UUID uuid, ClientInfo clientInfo, @Nullable User lpUser) {
         try {
-            if (!asyncApi.isClientOnline(clientInfo.getId()).getUninterruptibly()) {
-                return;
-            }
-
-            if (user == null) {
-                if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
-                    user = LuckPermsProvider.get().getUserManager().getUser(uuid);
-                } else {
-                    user = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+            asyncApi.isClientOnline(clientInfo.getId()).onSuccess(isOnline -> {
+                User user = lpUser;
+                if (!isOnline) {
+                    return;
                 }
-            }
-
-            ArrayList<Group> userGroups = new ArrayList<>(user.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));
-            userGroups.sort((a, b) -> Integer.compare(b.getWeight().orElse(0), a.getWeight().orElse(0)));
-            String group = "default";
-            for (Group g : userGroups) {
-                if (groupIDs.containsKey(g.getName())) {
-                    group = g.getName();
-                    break;
+                if (user == null) {
+                    if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
+                        user = LuckPermsProvider.get().getUserManager().getUser(uuid);
+                    } else {
+                        try {
+                            user = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+                        } catch (ExecutionException | InterruptedException e) {
+                            plugin.getLogger().log(Level.SEVERE, "Error by Loading User " + uuid);
+                        }
+                    }
                 }
-            }
-            int groupID = groupIDs.get(group);
-            int[] ranks = asyncApi.getClientInfo(clientInfo.getId()).getUninterruptibly().getServerGroups();
-            List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
 
-            for (Integer userRank : tsUserRanks) {
-                if (groupIDs.containsValue(userRank) && userRank != groupID) {
-                    asyncApi.removeClientFromServerGroup(userRank, clientInfo.getDatabaseId());
+                ArrayList<Group> userGroups = new ArrayList<>(user.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));
+                userGroups.sort((a, b) -> Integer.compare(b.getWeight().orElse(0), a.getWeight().orElse(0)));
+                String group = "default";
+                for (Group g : userGroups) {
+                    if (groupIDs.containsKey(g.getName())) {
+                        group = g.getName();
+                        break;
+                    }
                 }
-            }
+                int groupID = groupIDs.get(group);
+                int[] ranks = clientInfo.getServerGroups();
+                List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
 
-            if (!tsUserRanks.contains(groupID)) {
-                asyncApi.addClientToServerGroup(groupID, clientInfo.getDatabaseId());
-            }
+                for (Integer userRank : tsUserRanks) {
+                    if (groupIDs.containsValue(userRank) && userRank != groupID) {
+                        asyncApi.removeClientFromServerGroup(userRank, clientInfo.getDatabaseId());
+                    }
+                }
+
+                if (!tsUserRanks.contains(groupID)) {
+                    asyncApi.addClientToServerGroup(groupID, clientInfo.getDatabaseId());
+                }
+            });
         } catch (TS3CommandFailedException e) {
             int errorID = e.getError().getId();
             if (errorID != 512 && errorID != 1540) {
                 plugin.getLogger().log(Level.INFO, "Error by Update User " + uuid.toString() + " (" + clientInfo.getUniqueIdentifier() + ") " + e.getError().getMessage() + " " + errorID, e);
             }
-        } catch (ExecutionException | InterruptedException e) {
-            plugin.getLogger().log(Level.SEVERE, "Error by Loading User " + uuid);
         }
 
     }
@@ -244,20 +248,28 @@ public class TeamSpeakBot {
     public void removeAllTeamSpeakGroups(String id) {
 
         try {
-            ClientInfo clientInfo = asyncApi.getClientByUId(id).getUninterruptibly();
-
-            if (clientInfo == null || !asyncApi.isClientOnline(clientInfo.getId()).getUninterruptibly()) {
-                return;
-            }
-
-            int[] ranks = asyncApi.getClientInfo(clientInfo.getId()).getUninterruptibly().getServerGroups();
-            List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
-
-            for (Integer userRank : tsUserRanks) {
-                if (groupIDs.containsValue(userRank)) {
-                    asyncApi.removeClientFromServerGroup(userRank, clientInfo.getDatabaseId());
+            asyncApi.getClientByUId(id).onSuccess(clientInfo -> {
+                if (clientInfo == null) {
+                    return;
                 }
-            }
+
+                asyncApi.isClientOnline(clientInfo.getId()).onSuccess(isOnline -> {
+                    if (!isOnline) {
+                        return;
+                    }
+
+                    int[] ranks = clientInfo.getServerGroups();
+                    List<Integer> tsUserRanks = Arrays.stream(ranks).boxed().toList();
+
+                    for (Integer userRank : tsUserRanks) {
+                        if (groupIDs.containsValue(userRank)) {
+                            asyncApi.removeClientFromServerGroup(userRank, clientInfo.getDatabaseId());
+                        }
+                    }
+                });
+            });
+
+
         } catch (TS3CommandFailedException e) {
             int errorID = e.getError().getId();
             if (errorID != 512 && errorID != 1540) {
@@ -305,44 +317,48 @@ public class TeamSpeakBot {
     }
 
     public void updateTSDescription(TeamSpeakUserInfo teamSpeakUserInfo, ProxiedPlayer player) {
-        if (teamSpeakUserInfo != null && asyncApi.isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
-            String lastName = teamSpeakUserInfo.latestName();
+        if (teamSpeakUserInfo != null) {
+            asyncApi.isClientOnline(teamSpeakUserInfo.tsID()).onSuccess(isOnline -> {
+                if (!isOnline) {
+                    return;
+                }
+                String lastName = teamSpeakUserInfo.latestName();
 
-            if (asyncApi.isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
                 try {
-                    ClientInfo clientInfo = asyncApi.getClientByUId(teamSpeakUserInfo.tsID()).getUninterruptibly();
-                    if (clientInfo != null) {
-                        String description = clientInfo.getDescription();
-                        if (lastName != null) {
-                            if (lastName.equals(player.getName())) {
+                    asyncApi.getClientByUId(teamSpeakUserInfo.tsID()).onSuccess(clientInfo -> {
+                        if (clientInfo != null) {
+                            String description = clientInfo.getDescription();
+                            if (lastName != null) {
+                                if (lastName.equals(player.getName())) {
+                                    if (!description.contains(player.getName())) {
+                                        description = player.getName() + ((description.isEmpty() || description.isBlank()) ? "" : " | " + description);
+                                        setDescription(clientInfo, description);
+                                    }
+                                } else {
+                                    description = description.replace(lastName, player.getName());
+                                    setDescription(clientInfo, description);
+                                    try {
+                                        database.updateMcName(teamSpeakUserInfo.uuid(), teamSpeakUserInfo.tsID(), player.getName());
+                                    } catch (SQLException ex) {
+                                        plugin.getLogger().log(Level.SEVERE, "Error while Update McName", ex);
+                                    }
+                                }
+                            } else {
                                 if (!description.contains(player.getName())) {
                                     description = player.getName() + ((description.isEmpty() || description.isBlank()) ? "" : " | " + description);
                                     setDescription(clientInfo, description);
                                 }
-                            } else {
-                                description = description.replace(lastName, player.getName());
-                                setDescription(clientInfo, description);
                                 try {
                                     database.updateMcName(teamSpeakUserInfo.uuid(), teamSpeakUserInfo.tsID(), player.getName());
                                 } catch (SQLException ex) {
                                     plugin.getLogger().log(Level.SEVERE, "Error while Update McName", ex);
                                 }
                             }
-                        } else {
-                            if (!description.contains(player.getName())) {
-                                description = player.getName() + ((description.isEmpty() || description.isBlank()) ? "" : " | " + description);
-                                setDescription(clientInfo, description);
-                            }
-                            try {
-                                database.updateMcName(teamSpeakUserInfo.uuid(), teamSpeakUserInfo.tsID(), player.getName());
-                            } catch (SQLException ex) {
-                                plugin.getLogger().log(Level.SEVERE, "Error while Update McName", ex);
-                            }
                         }
-                    }
+                    });
                 } catch (TS3CommandFailedException ignored) {
                 }
-            }
+            });
         }
     }
 

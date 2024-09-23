@@ -29,15 +29,20 @@ public record LuckPermsListener(TeDiSync plugin, TeamSpeakBot teamSpeakBot, Disc
                     if (teamSpeakBot != null) {
                         Collection<TeamSpeakUserInfo> teamSpeakUserInfos = teamSpeakBot.getDatabase().getUsersByUUID(event.getUser().getUniqueId());
                         teamSpeakUserInfos.forEach(teamSpeakUserInfo -> {
-                            if (teamSpeakBot.getAsyncApi().isClientOnline(teamSpeakUserInfo.tsID()).getUninterruptibly()) {
+                            teamSpeakBot.getAsyncApi().isClientOnline(teamSpeakUserInfo.tsID()).onSuccess(isOnline -> {
+                                if (!isOnline) {
+                                    return;
+                                }
+
                                 try {
-                                    ClientInfo clientInfo = teamSpeakBot.getAsyncApi().getClientByUId(teamSpeakUserInfo.tsID()).getUninterruptibly();
-                                    if (clientInfo != null) {
-                                        teamSpeakBot.updateTeamSpeakGroup(event.getUser().getUniqueId(), clientInfo, event.getUser());
-                                    }
+                                    teamSpeakBot.getAsyncApi().getClientByUId(teamSpeakUserInfo.tsID()).onSuccess(clientInfo -> {
+                                        if (clientInfo != null) {
+                                            teamSpeakBot.updateTeamSpeakGroup(event.getUser().getUniqueId(), clientInfo, event.getUser());
+                                        }
+                                    });
                                 } catch (TS3CommandFailedException ignored) {
                                 }
-                            }
+                            });
                         });
                     }
 

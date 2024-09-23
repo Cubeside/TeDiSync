@@ -44,9 +44,31 @@ public class TeamSpeakLinkCommand extends SubCommand {
         }
 
         String name = args.getNext();
-        ClientInfo clientInfo;
         try {
-            clientInfo = teamSpeakBot.getAsyncApi().getClientByUId(tsID).getUninterruptibly();
+            teamSpeakBot.getAsyncApi().getClientByUId(tsID).onSuccess(clientInfo -> {
+                if (clientInfo == null) {
+                    ChatUtil.sendErrorMessage(player, "TeamSpeak ID nicht gefunden!");
+                    return;
+                }
+
+                try {
+                    TeamSpeakUserInfo userInfo = teamSpeakBot.getDatabase().getUserByTSID(tsID);
+                    if (userInfo != null) {
+                        ChatUtil.sendErrorMessage(player, "Dieser TeamSpeak Account ist bereits verbunden!");
+                        return;
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
+                ProxiedPlayer proxiedPlayer = teamSpeakBot.getPlugin().getProxy().getPlayer(name);
+                if (proxiedPlayer != null && proxiedPlayer.isConnected()) {
+                    teamSpeakBot.sendRequestToPlayer(proxiedPlayer, clientInfo);
+                    ChatUtil.sendNormalMessage(player, "Eine Anfrage wurde an " + proxiedPlayer.getName() + " gesendet!");
+                } else {
+                    ChatUtil.sendErrorMessage(player, "Spieler " + name + " ist nicht online!");
+                }
+            });
         } catch (TS3CommandFailedException e) {
             if (e.getError().getId() == 1540) {
                 ChatUtil.sendErrorMessage(player, "Ungültige ID");
@@ -54,29 +76,6 @@ public class TeamSpeakLinkCommand extends SubCommand {
                 teamSpeakBot.getPlugin().getLogger().log(Level.SEVERE, "Error by loading client!", e);
             }
             return true;
-        }
-
-        if (clientInfo == null) {
-            ChatUtil.sendErrorMessage(player, "TeamSpeak ID nicht gefunden!");
-            return true;
-        }
-
-        try {
-            TeamSpeakUserInfo userInfo = teamSpeakBot.getDatabase().getUserByTSID(tsID);
-            if (userInfo != null) {
-                ChatUtil.sendErrorMessage(player, "Dieser TeamSpeak Account ist bereits verbunden!");
-                return true;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
-        ProxiedPlayer proxiedPlayer = teamSpeakBot.getPlugin().getProxy().getPlayer(name);
-        if (proxiedPlayer != null && proxiedPlayer.isConnected()) {
-            teamSpeakBot.sendRequestToPlayer(proxiedPlayer, clientInfo);
-            ChatUtil.sendNormalMessage(player, "Eine Anfrage wurde an " + proxiedPlayer.getName() + " gesendet!");
-        } else {
-            ChatUtil.sendErrorMessage(player, "Spieler " + name + " ist nicht online!");
         }
 
         return true;
