@@ -59,7 +59,7 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
                 try {
                     teamSpeakBot.getDatabase().insertUser(player, tsID);
                     teamSpeakBot.getRequests().remove(player.getUniqueId());
-                    teamSpeakBot.updateTeamSpeakGroup(player.getUniqueId(), client);
+                    teamSpeakBot.updateTeamSpeakGroup(player.getUniqueId(), client, null);
                     teamSpeakBot.updateTSDescription(tsID, player);
                     ChatUtil.sendNormalMessage(player, "Die Anfrage wurde angenommen.");
                     teamSpeakBot.getAsyncApi().sendPrivateMessage(client.getId(), "Die Anfrage zum Verbinden wurde von " + player.getName() + " angenommen.");

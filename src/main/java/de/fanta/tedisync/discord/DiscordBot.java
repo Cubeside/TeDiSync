@@ -56,6 +56,7 @@ import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.event.EventHandler;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class DiscordBot extends ListenerAdapter implements Listener {
     private static JDA discordAPI;
@@ -398,12 +399,13 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         }
     }
 
-    public void updateDiscordGroup(UUID uuid, DiscordUserInfo discordUserInfo) {
+    public void updateDiscordGroup(UUID uuid, DiscordUserInfo discordUserInfo, @Nullable net.luckperms.api.model.user.User luckpermsUser) {
         if (discordUserInfo == null) {
             return;
         }
 
         plugin.getProxy().getScheduler().runAsync(plugin, () -> {
+            net.luckperms.api.model.user.User lpUser = luckpermsUser;
             try {
                 Guild guild = discordAPI.getGuildById(plugin.getConfig().getLong("discord.serverID"));
                 if (guild == null) {
@@ -415,11 +417,12 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                     throw new NullPointerException("user is null");
                 }
 
-                net.luckperms.api.model.user.User lpUser;
-                if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
-                    lpUser = LuckPermsProvider.get().getUserManager().getUser(uuid);
-                } else {
-                    lpUser = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+                if (lpUser == null) {
+                    if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
+                        lpUser = LuckPermsProvider.get().getUserManager().getUser(uuid);
+                    } else {
+                        lpUser = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+                    }
                 }
 
                 ArrayList<Group> userGroups = new ArrayList<>(lpUser.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));

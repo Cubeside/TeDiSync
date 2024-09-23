@@ -41,6 +41,7 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.config.Configuration;
+import org.jetbrains.annotations.Nullable;
 
 public class TeamSpeakBot {
     private final TeDiSync plugin;
@@ -156,7 +157,7 @@ public class TeamSpeakBot {
                     try {
                         TeamSpeakUserInfo teamSpeakUserInfo = database.getUserByTSID(client.getUniqueIdentifier());
                         if (teamSpeakUserInfo != null) {
-                            updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client);
+                            updateTeamSpeakGroup(teamSpeakUserInfo.uuid(), client, null);
                         } else {
                             removeAllTeamSpeakGroups(client.getUniqueIdentifier());
                         }
@@ -193,17 +194,18 @@ public class TeamSpeakBot {
         database.disconnect();
     }
 
-    public void updateTeamSpeakGroup(UUID uuid, ClientInfo clientInfo) {
+    public void updateTeamSpeakGroup(UUID uuid, ClientInfo clientInfo, @Nullable User user) {
         try {
             if (!asyncApi.isClientOnline(clientInfo.getId()).getUninterruptibly()) {
                 return;
             }
 
-            User user;
-            if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
-                user = LuckPermsProvider.get().getUserManager().getUser(uuid);
-            } else {
-                user = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+            if (user == null) {
+                if (LuckPermsProvider.get().getUserManager().isLoaded(uuid)) {
+                    user = LuckPermsProvider.get().getUserManager().getUser(uuid);
+                } else {
+                    user = LuckPermsProvider.get().getUserManager().loadUser(uuid).get();
+                }
             }
 
             ArrayList<Group> userGroups = new ArrayList<>(user.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));

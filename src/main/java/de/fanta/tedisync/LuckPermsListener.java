@@ -33,7 +33,7 @@ public record LuckPermsListener(TeDiSync plugin, TeamSpeakBot teamSpeakBot, Disc
                                 try {
                                     ClientInfo clientInfo = teamSpeakBot.getAsyncApi().getClientByUId(teamSpeakUserInfo.tsID()).getUninterruptibly();
                                     if (clientInfo != null) {
-                                        teamSpeakBot.updateTeamSpeakGroup(event.getUser().getUniqueId(), clientInfo);
+                                        teamSpeakBot.updateTeamSpeakGroup(event.getUser().getUniqueId(), clientInfo, event.getUser());
                                     }
                                 } catch (TS3CommandFailedException ignored) {
                                 }
@@ -44,7 +44,7 @@ public record LuckPermsListener(TeDiSync plugin, TeamSpeakBot teamSpeakBot, Disc
                     //Update Discord group
                     if (discordBot != null) {
                         DiscordUserInfo discordUserInfo = DiscordBot.getDatabase().getUsersByUUID(event.getUser().getUniqueId());
-                        discordBot.updateDiscordGroup(event.getUser().getUniqueId(), discordUserInfo);
+                        discordBot.updateDiscordGroup(event.getUser().getUniqueId(), discordUserInfo, event.getUser());
                     }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
