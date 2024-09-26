@@ -399,7 +399,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
         }
     }
 
-    public void updateDiscordGroup(UUID uuid, DiscordUserInfo discordUserInfo, @Nullable net.luckperms.api.model.user.User luckpermsUser) {
+    public void updateDiscordGroup(UUID uuid, DiscordUserInfo discordUserInfo, @Nullable net.luckperms.api.model.user.User luckpermsUser, boolean register) {
         if (discordUserInfo == null) {
             return;
         }
@@ -456,6 +456,13 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                         return;
                     }
                     guild.addRoleToMember(member, role).queue();
+                }
+
+                if (register) {
+                    Role role = guild.getRoleById(groupIDs.get("default"));
+                    if (role != null) {
+                        guild.addRoleToMember(member, role).queue();
+                    }
                 }
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);

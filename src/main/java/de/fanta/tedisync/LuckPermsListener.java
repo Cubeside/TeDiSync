@@ -49,7 +49,7 @@ public record LuckPermsListener(TeDiSync plugin, TeamSpeakBot teamSpeakBot, Disc
                     //Update Discord group
                     if (discordBot != null) {
                         DiscordUserInfo discordUserInfo = DiscordBot.getDatabase().getUsersByUUID(event.getUser().getUniqueId());
-                        discordBot.updateDiscordGroup(event.getUser().getUniqueId(), discordUserInfo, event.getUser());
+                        discordBot.updateDiscordGroup(event.getUser().getUniqueId(), discordUserInfo, event.getUser(), false);
                     }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);

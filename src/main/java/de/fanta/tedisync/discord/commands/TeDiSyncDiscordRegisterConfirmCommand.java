@@ -43,7 +43,7 @@ public class TeDiSyncDiscordRegisterConfirmCommand extends SubCommand {
 
                     try {
                         DiscordUserInfo discordUserInfo = DiscordBot.getDatabase().getUsersByUUID(player.getUniqueId());
-                        discordBot.updateDiscordGroup(player.getUniqueId(), discordUserInfo, null);
+                        discordBot.updateDiscordGroup(player.getUniqueId(), discordUserInfo, null, true);
                     } catch (SQLException e) {
                         TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Error while get user", e);
                     }
