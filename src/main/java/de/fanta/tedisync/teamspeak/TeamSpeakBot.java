@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import net.luckperms.api.LuckPermsProvider;
@@ -95,6 +96,16 @@ public class TeamSpeakBot {
         ignoreGroups = plugin.getConfig().getIntList("teamspeak.ignoreGroups");
 
         initTeamSpeakBotListener();
+
+        plugin.getProxy().getScheduler().schedule(plugin, () -> {
+            if (query == null) {
+                query = new TS3Query(config);
+            }
+
+            if (!query.isConnected()) {
+                query.connect();
+            }
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     public void initTeamSpeakBotListener() {
