@@ -1,15 +1,14 @@
 package de.fanta.tedisync.utils;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
 import java.util.stream.Collector;
+import org.jetbrains.annotations.Nullable;
 
 public class RandomCollection<E> extends TreeMap<Double, E> {
-
+    private static final long serialVersionUID = 1L;
     private double total = 0;
     private final Random random;
 
@@ -31,7 +30,9 @@ public class RandomCollection<E> extends TreeMap<Double, E> {
     }
 
     public RandomCollection<E> add(double weight, E result) {
-        if (weight <= 0) return this;
+        if (weight <= 0) {
+            return this;
+        }
         total += weight;
         put(total, result);
         return this;

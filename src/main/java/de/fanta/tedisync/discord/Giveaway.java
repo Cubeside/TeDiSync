@@ -3,6 +3,10 @@ package de.fanta.tedisync.discord;
 import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.utils.RandomCollection;
 import de.iani.cubesideutils.StringUtil;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
@@ -10,15 +14,6 @@ import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.config.Configuration;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
 
 public class Giveaway {
     private final String name;

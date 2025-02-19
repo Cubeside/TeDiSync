@@ -1,18 +1,16 @@
 package de.fanta.tedisync;
 
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
-import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.discord.DiscordBot;
 import de.fanta.tedisync.discord.DiscordUserInfo;
 import de.fanta.tedisync.teamspeak.TeamSpeakBot;
 import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
-import net.luckperms.api.LuckPermsProvider;
-import net.luckperms.api.event.user.UserDataRecalculateEvent;
-import net.md_5.bungee.api.ProxyServer;
-
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.event.user.UserDataRecalculateEvent;
+import net.md_5.bungee.api.ProxyServer;
 
 public record LuckPermsListener(TeDiSync plugin, TeamSpeakBot teamSpeakBot, DiscordBot discordBot) {
 

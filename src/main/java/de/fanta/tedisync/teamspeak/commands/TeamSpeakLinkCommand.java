@@ -1,21 +1,19 @@
 package de.fanta.tedisync.teamspeak.commands;
 
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
-import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.teamspeak.TeamSpeakBot;
 import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
-import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Command;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.logging.Level;
+import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.plugin.Command;
 
 public class TeamSpeakLinkCommand extends SubCommand {
     private final TeamSpeakBot teamSpeakBot;

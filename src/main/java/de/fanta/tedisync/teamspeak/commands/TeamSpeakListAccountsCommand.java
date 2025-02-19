@@ -6,7 +6,8 @@ import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
-import net.md_5.bungee.api.ChatColor;
+import java.sql.SQLException;
+import java.util.Collection;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -14,9 +15,6 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
-
-import java.sql.SQLException;
-import java.util.Collection;
 
 public class TeamSpeakListAccountsCommand extends SubCommand {
 

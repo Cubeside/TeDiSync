@@ -1,16 +1,12 @@
 package de.fanta.tedisync.utils;
 
 import de.fanta.tedisync.TeDiSync;
-import de.iani.cubesideutils.ComponentUtil;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-
-import java.awt.font.TextMeasurer;
 
 public class ChatUtil {
 
@@ -24,12 +20,12 @@ public class ChatUtil {
     }
 
     public static void sendMessage(CommandSender sender, String colors, String message) {
-        sender.sendMessage(TeDiSync.PREFIX + " " + colors + message);
+        sender.sendMessage(TextComponent.fromLegacy(TeDiSync.PREFIX + " " + colors + message));
     }
 
     public static void sendComponent(CommandSender sender, BaseComponent message) {
-        BaseComponent prefixComponent = new ComponentBuilder().build();
-        prefixComponent.addExtra(new TextComponent(TextComponent.fromLegacyText(TeDiSync.PREFIX + " ")));
+        TextComponent prefixComponent = new TextComponent();
+        prefixComponent.addExtra(new TextComponent(TextComponent.fromLegacy(TeDiSync.PREFIX + " ")));
         prefixComponent.addExtra(message);
         sender.sendMessage(prefixComponent);
     }
@@ -47,10 +43,8 @@ public class ChatUtil {
     }
 
     public static void sendDebugMessage(CommandSender sender, String message) {
-        if (sender.hasPermission("fanta.debug")) {
-            if (sender != null) {
-                sendMessage(sender, ChatColor.of("#FF04F7").toString(), message);
-            }
+        if (sender != null && sender.hasPermission("fanta.debug")) {
+            sendMessage(sender, ChatColor.of("#FF04F7").toString(), message);
         }
     }
 

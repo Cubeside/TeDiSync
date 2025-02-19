@@ -5,7 +5,6 @@ import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
