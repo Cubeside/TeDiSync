@@ -11,7 +11,9 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.config.Configuration;
 
@@ -236,15 +238,23 @@ public class Giveaway {
         }
     }
 
-    public void deleteGiveawayFromDiscordChannel() {
+    public boolean deleteGiveawayFromDiscordChannel() {
         MessageChannel channel = DiscordBot.getDiscordAPI().getTextChannelById(TeDiSync.getPlugin().getConfig().getLong("discord.giveawaychannel"));
         if (channel != null) {
-            Message gm = channel.retrieveMessageById(messageID).complete();
-            TeDiSync.getPlugin().getLogger().info(String.valueOf(messageID));
-            if (gm != null) {
-                gm.delete().queue();
+            try {
+                Message gm = channel.retrieveMessageById(messageID).complete();
+                TeDiSync.getPlugin().getLogger().info(String.valueOf(messageID));
+                if (gm != null) {
+                    gm.delete().queue();
+                }
+            } catch (ErrorResponseException e) {
+                if (e.getErrorResponse() != ErrorResponse.UNKNOWN_MESSAGE) {
+                    TeDiSync.getPlugin().getLogger().log(Level.SEVERE, "Could not delete giveaway message!", e);
+                }
+                return false;
             }
         }
+        return true;
     }
 
     public int countEntries() {

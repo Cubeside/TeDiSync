@@ -51,8 +51,11 @@ public class TeDiSyncDiscordsetOpen extends SubCommand {
                 return true;
             }
             if (!giveaway.setOpen(false)) {
-                giveaway.deleteGiveawayFromDiscordChannel();
-                ChatUtil.sendNormalMessage(player, "Das Gewinnspiel wurde geschlossen und aus dem Discord entfernt.");
+                if (giveaway.deleteGiveawayFromDiscordChannel()) {
+                    ChatUtil.sendNormalMessage(player, "Das Gewinnspiel wurde geschlossen und aus dem Discord entfernt.");
+                } else {
+                    ChatUtil.sendWarningMessage(player, "Das Gewinnspiel wurde geschlossen, aber konnte nicht aus dem Discord entfernt werden.");
+                }
             } else {
                 ChatUtil.sendErrorMessage(player, "Das Gewinnspiel konnte nicht geschlossen werden.");
             }

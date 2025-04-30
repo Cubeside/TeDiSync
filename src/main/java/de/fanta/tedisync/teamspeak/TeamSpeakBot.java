@@ -8,6 +8,7 @@ import com.github.theholywaffle.teamspeak3.api.event.ClientJoinEvent;
 import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
+import com.github.theholywaffle.teamspeak3.api.exception.TS3ConnectionFailedException;
 import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.TeDiSync;
@@ -16,7 +17,6 @@ import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
 import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import de.iani.cubesideutils.commands.ArgsParser;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
@@ -60,6 +59,32 @@ public class TeamSpeakBot {
         this.plugin = plugin;
         database = new TeamSpeakDatabase(new SQLConfigBungee(plugin.getConfig().getSection("teamspeak.database")));
 
+        new TeamSpeakCommandRegistration(this).registerCommands();
+        plugin.getProxy().getPluginManager().registerListener(plugin, new BungeeListener(this));
+
+        requests = new ConcurrentHashMap<>();
+        groupIDs = new ConcurrentHashMap<>();
+        Configuration rankConfig = plugin.getConfig().getSection("teamspeak.rankIDs");
+        rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getInt(s)));
+
+        newbieGroup = plugin.getConfig().getInt("teamspeak.newbieGroup");
+        ignoreGroups = plugin.getConfig().getIntList("teamspeak.ignoreGroups");
+
+        plugin.getProxy().getScheduler().schedule(plugin, () -> {
+            if (query == null || !query.isConnected()) {
+                reconnect();
+            }
+        }, 0, 1, TimeUnit.MINUTES);
+    }
+
+    public void reconnect() {
+        if (query != null && query.isConnected()) {
+            try {
+                query.getAsyncApi().logout();
+                query.exit();
+            } catch (Exception ignored) {
+            }
+        }
         String host = plugin.getConfig().getString("teamspeak.login.host");
         int query_port = plugin.getConfig().getInt("teamspeak.login.query_port");
         int port = plugin.getConfig().getInt("teamspeak.login.port");
@@ -75,37 +100,22 @@ public class TeamSpeakBot {
         config.setReconnectStrategy(ReconnectStrategy.exponentialBackoff());
 
         query = new TS3Query(config);
-        query.connect();
+        try {
+            query.connect();
 
-        asyncApi = query.getAsyncApi();
-        asyncApi.login(query_username, query_password);
-        asyncApi.selectVirtualServerByPort(port);
-        asyncApi.setNickname(query_displayname);
+            asyncApi = query.getAsyncApi();
+            asyncApi.login(query_username, query_password);
+            asyncApi.selectVirtualServerByPort(port);
+            asyncApi.setNickname(query_displayname);
+            asyncApi.registerAllEvents();
 
-        asyncApi.registerAllEvents();
-
-        new TeamSpeakCommandRegistration(this).registerCommands();
-        plugin.getProxy().getPluginManager().registerListener(plugin, new BungeeListener(this));
-
-        requests = new ConcurrentHashMap<>();
-        groupIDs = new ConcurrentHashMap<>();
-        Configuration rankConfig = plugin.getConfig().getSection("teamspeak.rankIDs");
-        rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getInt(s)));
-
-        newbieGroup = plugin.getConfig().getInt("teamspeak.newbieGroup");
-        ignoreGroups = plugin.getConfig().getIntList("teamspeak.ignoreGroups");
-
-        initTeamSpeakBotListener();
-
-        plugin.getProxy().getScheduler().schedule(plugin, () -> {
-            if (query == null) {
-                query = new TS3Query(config);
-            }
-
-            if (!query.isConnected()) {
-                query.connect();
-            }
-        }, 1, 1, TimeUnit.MINUTES);
+            initTeamSpeakBotListener();
+            plugin.getLogger().warning("Established a connection to the teamspeak server!");
+        } catch (TS3ConnectionFailedException e) {
+            plugin.getLogger().warning("Could not connect to the teamspeak server!");
+            query = null;
+            asyncApi = null;
+        }
     }
 
     public void initTeamSpeakBotListener() {
