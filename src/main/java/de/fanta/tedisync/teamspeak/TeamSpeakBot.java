@@ -1,5 +1,6 @@
 package de.fanta.tedisync.teamspeak;
 
+import com.github.theholywaffle.teamspeak3.TS3Api;
 import com.github.theholywaffle.teamspeak3.TS3ApiAsync;
 import com.github.theholywaffle.teamspeak3.TS3Config;
 import com.github.theholywaffle.teamspeak3.TS3Query;
@@ -9,6 +10,7 @@ import com.github.theholywaffle.teamspeak3.api.event.TS3EventAdapter;
 import com.github.theholywaffle.teamspeak3.api.event.TextMessageEvent;
 import com.github.theholywaffle.teamspeak3.api.exception.TS3CommandFailedException;
 import com.github.theholywaffle.teamspeak3.api.exception.TS3ConnectionFailedException;
+import com.github.theholywaffle.teamspeak3.api.reconnect.ConnectionHandler;
 import com.github.theholywaffle.teamspeak3.api.reconnect.ReconnectStrategy;
 import com.github.theholywaffle.teamspeak3.api.wrapper.ClientInfo;
 import de.fanta.tedisync.TeDiSync;
@@ -46,6 +48,8 @@ import org.jetbrains.annotations.Nullable;
 public class TeamSpeakBot {
     private final TeDiSync plugin;
 
+    private volatile boolean stopping;
+
     private static TeamSpeakDatabase database;
     private static ConcurrentHashMap<UUID, String> requests;
     private static TS3ApiAsync asyncApi;
@@ -71,20 +75,18 @@ public class TeamSpeakBot {
         ignoreGroups = plugin.getConfig().getIntList("teamspeak.ignoreGroups");
 
         plugin.getProxy().getScheduler().schedule(plugin, () -> {
-            if (query == null || !query.isConnected()) {
-                reconnect();
-            }
-        }, 0, 1, TimeUnit.MINUTES);
+            connect();
+        }, 0, TimeUnit.MINUTES);
     }
 
-    public void reconnect() {
-        if (query != null && query.isConnected()) {
-            try {
-                query.getAsyncApi().logout();
-                query.exit();
-            } catch (Exception ignored) {
-            }
-        }
+    public void connect() {
+        // if (query != null && query.isConnected()) {
+        // try {
+        // query.getAsyncApi().logout();
+        // query.exit();
+        // } catch (Exception ignored) {
+        // }
+        // }
         String host = plugin.getConfig().getString("teamspeak.login.host");
         int query_port = plugin.getConfig().getInt("teamspeak.login.query_port");
         int port = plugin.getConfig().getInt("teamspeak.login.port");
@@ -98,23 +100,42 @@ public class TeamSpeakBot {
         config.setQueryPort(query_port);
         config.setFloodRate(TS3Query.FloodRate.UNLIMITED);
         config.setReconnectStrategy(ReconnectStrategy.exponentialBackoff());
+        config.setLoginCredentials(query_username, query_password);
+        config.setConnectionHandler(new ConnectionHandler() {
 
-        query = new TS3Query(config);
-        try {
-            query.connect();
+            @Override
+            public void onDisconnect(TS3Query ts3Query) {
+                plugin.getLogger().info("TeamSpeakBot:onDisconnect");
+            }
 
-            asyncApi = query.getAsyncApi();
-            asyncApi.login(query_username, query_password);
-            asyncApi.selectVirtualServerByPort(port);
-            asyncApi.setNickname(query_displayname);
-            asyncApi.registerAllEvents();
+            @Override
+            public void onConnect(TS3Api api) {
+                plugin.getLogger().info("TeamSpeakBot:onConnect");
+                api.selectVirtualServerByPort(port);
+                api.setNickname(query_displayname);
+                api.registerAllEvents();
 
-            initTeamSpeakBotListener();
-            plugin.getLogger().warning("Established a connection to the teamspeak server!");
-        } catch (TS3ConnectionFailedException e) {
-            plugin.getLogger().warning("Could not connect to the teamspeak server!");
-            query = null;
-            asyncApi = null;
+            }
+        });
+
+        while (!stopping && query == null) {
+            query = new TS3Query(config);
+            try {
+                query.connect();
+                asyncApi = query.getAsyncApi();
+
+                initTeamSpeakBotListener();
+                plugin.getLogger().info("Established a connection to the teamspeak server!");
+            } catch (TS3ConnectionFailedException e) {
+                plugin.getLogger().warning("Could not connect to the teamspeak server!");
+                query = null;
+                asyncApi = null;
+                try {
+                    Thread.sleep(20000L);
+                } catch (InterruptedException e1) {
+                    // ignore
+                }
+            }
         }
     }
 
@@ -208,6 +229,7 @@ public class TeamSpeakBot {
     }
 
     public void stopTeamSpeakBot() {
+        stopping = true;
         if (query.isConnected()) {
             asyncApi.logout();
             query.exit();
