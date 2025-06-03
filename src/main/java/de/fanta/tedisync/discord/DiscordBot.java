@@ -4,7 +4,7 @@ import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.discord.commands.DiscordCommandRegistration;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
-
+import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import java.awt.Color;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -19,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-
-import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -32,12 +30,14 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import net.dv8tion.jda.api.interactions.modals.Modal;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.group.Group;
@@ -412,7 +412,22 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                     throw new NullPointerException("discord guild is null");
                 }
 
-                Member member = guild.retrieveMemberById(discordUserInfo.dcID()).complete();
+                Member member;
+                try {
+                    member = guild.retrieveMemberById(discordUserInfo.dcID()).complete();
+                } catch (ErrorResponseException ex) {
+                    if (ex.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER) {
+                        // discord account does no longer exist - remove link
+                        plugin.getLogger().log(Level.INFO, "Deleting discord link for no longer existing user: " + uuid + " -> " + discordUserInfo.dcID());
+                        try {
+                            DiscordBot.getDatabase().deleteAccountByDCID(discordUserInfo.dcID());
+                        } catch (SQLException e) {
+                            plugin.getLogger().log(Level.SEVERE, "Error while removing user discord link " + uuid, e);
+                        }
+                        return;
+                    }
+                    throw ex;
+                }
                 if (member == null) {
                     throw new NullPointerException("user is null");
                 }
