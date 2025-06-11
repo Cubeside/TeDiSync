@@ -6,14 +6,13 @@ import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
-import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Command;
-
 import java.sql.SQLException;
 import java.util.logging.Level;
+import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
+
     private final boolean confirm;
     private final TeamSpeakBot teamSpeakBot;
 
@@ -23,13 +22,14 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String alias, String commandString, ArgsParser args) {
+    public boolean onCommand(CommandSender sender, Command command, String alias, String commandString,
+            ArgsParser args) {
         if (!(sender instanceof ProxiedPlayer player)) {
             ChatUtil.sendErrorMessage(sender, "You are not a Player :>");
             return true;
         }
 
-        String tsID = teamSpeakBot.getRequests().get(player.getUniqueId());
+        String tsID = this.teamSpeakBot.getRequests().get(player.getUniqueId());
 
         if (tsID == null) {
             ChatUtil.sendErrorMessage(player, "Du hast momentan keine Anfrage.");
@@ -38,14 +38,14 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
 
         ClientInfo client;
         try {
-            client = teamSpeakBot.getAsyncApi().getClientByUId(tsID).get();
+            client = this.teamSpeakBot.getAsyncApi().getClientByUId(tsID).get();
         } catch (InterruptedException e) {
             ChatUtil.sendErrorMessage(player, "TeamSpeak Client nicht gefunden.");
             return true;
         }
 
         try {
-            TeamSpeakUserInfo userInfo = teamSpeakBot.getDatabase().getUserByTSID(tsID);
+            TeamSpeakUserInfo userInfo = this.teamSpeakBot.getDatabase().getUserByTSID(tsID);
             if (userInfo != null) {
                 ChatUtil.sendErrorMessage(player, "Dieser TeamSpeak Account ist bereits verbunden!");
                 return true;
@@ -54,27 +54,31 @@ public class TeDiSyncTeamSpeakRegisterConfirmCommand extends SubCommand {
             throw new RuntimeException(e);
         }
 
-        if (confirm) {
-            if (teamSpeakBot.getRequests().containsKey(player.getUniqueId())) {
+        if (this.confirm) {
+            if (this.teamSpeakBot.getRequests().containsKey(player.getUniqueId())) {
                 try {
-                    teamSpeakBot.getDatabase().insertUser(player, tsID);
-                    teamSpeakBot.getRequests().remove(player.getUniqueId());
-                    teamSpeakBot.updateTeamSpeakGroup(player.getUniqueId(), client, null);
-                    teamSpeakBot.updateTSDescription(tsID, player);
+                    this.teamSpeakBot.getDatabase().insertUser(player, tsID);
+                    this.teamSpeakBot.removeFromUserInfoCache(tsID);
+                    this.teamSpeakBot.getRequests().remove(player.getUniqueId());
+                    this.teamSpeakBot.updateTeamSpeakGroup(player.getUniqueId(), client, null);
+                    this.teamSpeakBot.updateTSDescription(tsID, player);
                     ChatUtil.sendNormalMessage(player, "Die Anfrage wurde angenommen.");
-                    teamSpeakBot.getAsyncApi().sendPrivateMessage(client.getId(), "Die Anfrage zum Verbinden wurde von " + player.getName() + " angenommen.");
+                    this.teamSpeakBot.getAsyncApi().sendPrivateMessage(client.getId(),
+                            "Die Anfrage zum Verbinden wurde von " + player.getName() + " angenommen.");
                 } catch (SQLException e) {
-                    teamSpeakBot.getPlugin().getLogger().log(Level.SEVERE, "Daten konnten nicht gespeichert werden.", e);
+                    this.teamSpeakBot.getPlugin().getLogger().log(Level.SEVERE,
+                            "Daten konnten nicht gespeichert werden.", e);
                     ChatUtil.sendErrorMessage(player, "Daten konnten nicht gespeichert werden.");
                 }
             } else {
                 ChatUtil.sendErrorMessage(player, "Du hast momentan keine Anfrage.");
             }
         } else {
-            if (teamSpeakBot.getRequests().containsKey(player.getUniqueId())) {
-                teamSpeakBot.getRequests().remove(player.getUniqueId());
+            if (this.teamSpeakBot.getRequests().containsKey(player.getUniqueId())) {
+                this.teamSpeakBot.getRequests().remove(player.getUniqueId());
                 ChatUtil.sendNormalMessage(player, "Die Anfrage wurde abgelehnt.");
-                teamSpeakBot.getAsyncApi().sendPrivateMessage(client.getId(), "Die Anfrage zum Verbinden wurde von " + player.getName() + " abgelehnt.");
+                this.teamSpeakBot.getAsyncApi().sendPrivateMessage(client.getId(),
+                        "Die Anfrage zum Verbinden wurde von " + player.getName() + " abgelehnt.");
             } else {
                 ChatUtil.sendErrorMessage(player, "Du hast momentan keine Anfrage.");
             }

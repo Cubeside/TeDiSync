@@ -5,11 +5,9 @@ import de.fanta.tedisync.teamspeak.TeamSpeakUserInfo;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
 import de.iani.cubesideutils.commands.ArgsParser;
+import java.sql.SQLException;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Command;
-
-import java.sql.SQLException;
 
 public class TeamSpeakUnlinkCommand extends SubCommand {
 
@@ -21,7 +19,8 @@ public class TeamSpeakUnlinkCommand extends SubCommand {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String alias, String commandString, ArgsParser args) {
+    public boolean onCommand(CommandSender sender, Command command, String alias, String commandString,
+            ArgsParser args) {
         if (!(sender instanceof ProxiedPlayer player)) {
             ChatUtil.sendErrorMessage(sender, "You are nor a Player :>");
             return true;
@@ -33,21 +32,23 @@ public class TeamSpeakUnlinkCommand extends SubCommand {
         }
 
         try {
-            TeamSpeakUserInfo teamSpeakUserInfo = teamSpeakBot.getDatabase().getUserByTSID(args.getNext());
+            TeamSpeakUserInfo teamSpeakUserInfo = this.teamSpeakBot.getDatabase().getUserByTSID(args.getNext());
             if (teamSpeakUserInfo == null) {
                 ChatUtil.sendErrorMessage(player, "TeamSpeak ID nicht gefunden!");
                 return true;
             }
 
             if (teamSpeakUserInfo.uuid().equals(player.getUniqueId())) {
-                teamSpeakBot.getDatabase().deleteAccountByTSID(teamSpeakUserInfo.tsID());
-                teamSpeakBot.removeAllTeamSpeakGroups(teamSpeakUserInfo.tsID());
+                this.teamSpeakBot.getDatabase().deleteAccountByTSID(teamSpeakUserInfo.tsID());
+                this.teamSpeakBot.userUnlinked(teamSpeakUserInfo);
                 ChatUtil.sendNormalMessage(player, "Du hast den Account " + teamSpeakUserInfo.tsID() + " entfernt!");
-            } else if (player.hasPermission(DELETE_OTHER_ACCOUNTS_PERMISSION)) {
-                teamSpeakBot.getDatabase().deleteAccountByTSID(teamSpeakUserInfo.tsID());
-                ProxiedPlayer proxiedPlayer = teamSpeakBot.getPlugin().getProxy().getPlayer(teamSpeakUserInfo.uuid());
-                teamSpeakBot.removeAllTeamSpeakGroups(teamSpeakUserInfo.tsID());
-                ChatUtil.sendNormalMessage(player, "Du hast den Account " + teamSpeakUserInfo.tsID() + " von " + (proxiedPlayer != null ? proxiedPlayer.getName() : teamSpeakUserInfo.uuid()) + " entfernt!");
+            } else if (player.hasPermission(this.DELETE_OTHER_ACCOUNTS_PERMISSION)) {
+                this.teamSpeakBot.getDatabase().deleteAccountByTSID(teamSpeakUserInfo.tsID());
+                ProxiedPlayer proxiedPlayer =
+                        this.teamSpeakBot.getPlugin().getProxy().getPlayer(teamSpeakUserInfo.uuid());
+                this.teamSpeakBot.userUnlinked(teamSpeakUserInfo);
+                ChatUtil.sendNormalMessage(player, "Du hast den Account " + teamSpeakUserInfo.tsID() + " von "
+                        + (proxiedPlayer != null ? proxiedPlayer.getName() : teamSpeakUserInfo.uuid()) + " entfernt!");
             } else {
                 ChatUtil.sendErrorMessage(player, "Du kannst nur eigene Accounts entfernen!");
             }
