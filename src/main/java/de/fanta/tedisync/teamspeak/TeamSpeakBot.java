@@ -618,46 +618,63 @@ public class TeamSpeakBot {
     }
 
     public UUID drawLottery() {
-        try {
-            Map<UUID, Long> activeTimes = this.database.getActiveTimes();
-            Map<UUID, Integer> ticketsByUser = new LinkedHashMap<>(activeTimes.size());
-            for (Entry<UUID, Long> entry : activeTimes.entrySet()) {
-                int tickets =
-                        (int) Math.min(entry.getValue() / this.timePerLotteryTicket, this.maxLotteryTicketsByTime);
-                ticketsByUser.put(entry.getKey(), tickets);
-            }
+        synchronized (this.activityLock) {
+            try {
+                Map<UUID, Long> activeTimes = this.database.getActiveTimes();
+                Map<UUID, Integer> ticketsByUser = new LinkedHashMap<>(activeTimes.size());
+                for (Entry<UUID, Long> entry : this.temporaryActiveTime.entrySet()) {
+                    activeTimes.merge(entry.getKey(), entry.getValue(), (l1, l2) -> l1 + l2);
+                }
 
-            for (Client client : this.asyncApi.getClients().get()) {
-                TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
-                if (info == null) {
-                    continue;
+                for (Entry<UUID, Long> entry : activeTimes.entrySet()) {
+                    int tickets =
+                            (int) Math.min(entry.getValue() / this.timePerLotteryTicket, this.maxLotteryTicketsByTime);
+                    ticketsByUser.put(entry.getKey(), tickets);
                 }
-                if (this.lotteryChannels.contains(client.getChannelId())) {
-                    ticketsByUser.compute(info.uuid(), (id, tickets) -> tickets == null ? this.lotteryChannelTickets
-                            : tickets + this.lotteryChannelTickets);
-                }
-            }
 
-            int totalTickets = ticketsByUser.values().stream().mapToInt(Integer::intValue).sum();
-            int winnerTicket = RandomUtil.SHARED_SECURE_RANDOM.nextInt(totalTickets);
-            int ticketNr = 0;
-            for (Entry<UUID, Integer> user : ticketsByUser.entrySet()) {
-                ticketNr += user.getValue();
-                if (ticketNr > winnerTicket) {
-                    return user.getKey();
+                System.out.println("Tickets from time:" + ticketsByUser);
+
+                for (Client client : this.asyncApi.getClients().get()) {
+                    TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
+                    if (info == null) {
+                        continue;
+                    }
+                    if (this.lotteryChannels.contains(client.getChannelId())) {
+                        ticketsByUser.compute(info.uuid(), (id, tickets) -> tickets == null ? this.lotteryChannelTickets
+                                : tickets + this.lotteryChannelTickets);
+                    }
                 }
+
+                System.out.println("Tickets total:" + ticketsByUser);
+
+                int totalTickets = ticketsByUser.values().stream().mapToInt(Integer::intValue).sum();
+                if (totalTickets == 0) {
+                    return null;
+                }
+
+                int winnerTicket = RandomUtil.SHARED_SECURE_RANDOM.nextInt(totalTickets);
+                int ticketNr = 0;
+                for (Entry<UUID, Integer> user : ticketsByUser.entrySet()) {
+                    ticketNr += user.getValue();
+                    if (ticketNr > winnerTicket) {
+                        return user.getKey();
+                    }
+                }
+                throw new RuntimeException("winning ticket not found, should not happen");
+            } catch (InterruptedException | SQLException e) {
+                throw new RuntimeException(e);
             }
-            throw new RuntimeException(new AssertionError());
-        } catch (InterruptedException | SQLException e) {
-            throw new RuntimeException(e);
         }
     }
 
     public void resetLottery() {
-        try {
-            this.database.clearActiveTimes();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        synchronized (this.activityLock) {
+            try {
+                this.temporaryActiveTime.clear();
+                this.database.clearActiveTimes();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

@@ -190,9 +190,10 @@ public class TeamSpeakDatabase {
     public Map<UUID, Long> getActiveTimes() throws SQLException {
         return this.connection.runCommands((connection, sqlConnection) -> {
             PreparedStatement smt = sqlConnection.getOrCreateStatement(this.getActiveTimesQuery);
+
             ResultSet rs = smt.executeQuery();
             Map<UUID, Long> result = new LinkedHashMap<>();
-            while (!rs.next()) {
+            while (rs.next()) {
                 result.put(UUID.fromString(rs.getString(1)), rs.getLong(2));
             }
             return result;

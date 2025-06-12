@@ -12,13 +12,18 @@ public record TeamSpeakCommandRegistration(TeamSpeakBot teamSpeakBot) {
 
     public void registerCommands() {
         CommandRouter commandRouter = new CommandRouter();
-        pM.registerCommand(teamSpeakBot.getPlugin(), new CommandRouterCommand(commandRouter, "teamspeak", null, "ts"));
-        commandRouter.addCommandMapping(new TeDiSyncTeamSpeakRegisterConfirmCommand(true, teamSpeakBot), "register", "accept");
-        commandRouter.addCommandMapping(new TeDiSyncTeamSpeakRegisterConfirmCommand(false, teamSpeakBot), "register", "deny");
-        commandRouter.addCommandMapping(new TeamSpeakConvertCommand(teamSpeakBot), "convert");
-        commandRouter.addCommandMapping(new TeamSpeakListAccountsCommand(teamSpeakBot), "listaccounts");
-        commandRouter.addCommandMapping(new TeamSpeakUnlinkCommand(teamSpeakBot), "unlink");
-        commandRouter.addCommandMapping(new TeamSpeakListNewbiesCommand(teamSpeakBot), "listnewbies");
-        commandRouter.addCommandMapping(new TeamSpeakLinkCommand(teamSpeakBot), "link");
+        pM.registerCommand(this.teamSpeakBot.getPlugin(),
+                new CommandRouterCommand(commandRouter, "teamspeak", null, "ts"));
+        commandRouter.addCommandMapping(new TeDiSyncTeamSpeakRegisterConfirmCommand(true, this.teamSpeakBot),
+                "register", "accept");
+        commandRouter.addCommandMapping(new TeDiSyncTeamSpeakRegisterConfirmCommand(false, this.teamSpeakBot),
+                "register", "deny");
+        commandRouter.addCommandMapping(new TeamSpeakConvertCommand(this.teamSpeakBot), "convert");
+        commandRouter.addCommandMapping(new TeamSpeakListAccountsCommand(this.teamSpeakBot), "listaccounts");
+        commandRouter.addCommandMapping(new TeamSpeakUnlinkCommand(this.teamSpeakBot), "unlink");
+        commandRouter.addCommandMapping(new TeamSpeakListNewbiesCommand(this.teamSpeakBot), "listnewbies");
+        commandRouter.addCommandMapping(new TeamSpeakLinkCommand(this.teamSpeakBot), "link");
+        commandRouter.addCommandMapping(new TeamSpeakDrawLotteryCommand(this.teamSpeakBot), "drawlottery");
+        commandRouter.addCommandMapping(new TeamSpeakResetLotteryCommand(this.teamSpeakBot), "resetLottery");
     }
 }
