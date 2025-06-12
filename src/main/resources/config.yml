@@ -33,6 +33,12 @@ teamspeak:
   ignoreGroups:
     - 201
   message: Du bist neu auf unserem TeamSpeak. Um dich freizuschalten gib !register <MinecraftName> ein und akzeptiere die anfrage in Minecraft.
+  activityControlPeriodMs: 5000
+  activityExcludingChannels: []
+  lotteryChannels: []
+  msPerLotteryTicket: 25200000 # 7 * 60 * 60 * 1000 ms = 7 hours
+  maxLotteryTicketsByTime: 7
+  lotteryChannelTickets: 7
 discord:
   enabled: false
   login_token: CHANGETHIS
