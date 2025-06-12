@@ -73,6 +73,7 @@ public class TeamSpeakBot {
     private TS3Query query;
     private ConcurrentHashMap<String, Integer> groupIDs;
 
+    private Object activityLock = new Object();
     private Map<Integer, String> clientIdCache;
     private Map<String, TeamSpeakUserInfo> userInfoCache;
     private Set<String> nonLinkedCache;
@@ -173,7 +174,7 @@ public class TeamSpeakBot {
                 initActivityControl();
                 this.plugin.getLogger().info("Established a connection to the teamspeak server!");
             } catch (TS3ConnectionFailedException e) {
-                this.plugin.getLogger().warning("Could not connect to the teamspeak server!");
+                this.plugin.getLogger().log(Level.WARNING, "Could not connect to the teamspeak server!", e);
                 this.query = null;
                 this.asyncApi = null;
                 try {
@@ -311,21 +312,34 @@ public class TeamSpeakBot {
 
     public void stopTeamSpeakBot() {
         this.stopping = true;
-        if (this.query.isConnected()) {
-            this.asyncApi.logout();
-            this.query.exit();
+        synchronized (this.activityLock) {
+            if (this.query.isConnected()) {
+                this.asyncApi.logout();
+                this.query.exit();
+            }
+            try {
+                for (Entry<UUID, Long> entry : this.temporaryActiveTime.entrySet()) {
+                    this.database.addActiveTime(entry.getKey(), entry.getValue());
+                }
+                this.temporaryActiveTime.clear();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            } finally {
+                this.database.disconnect();
+            }
         }
-        this.database.disconnect();
     }
 
     private void initActivityControl() {
         this.lastActivityCheck = System.currentTimeMillis();
         this.controlTask = this.plugin.getProxy().getScheduler().schedule(this.plugin, () -> {
-            if (this.stopping) {
-                this.controlTask.cancel();
-                this.tidyUserCacheTask.cancel();
-            } else {
-                checkClientActivities();
+            synchronized (this.activityLock) {
+                if (this.stopping) {
+                    this.controlTask.cancel();
+                    this.tidyUserCacheTask.cancel();
+                } else {
+                    checkClientActivities();
+                }
             }
         }, 0, this.activityControlPeriodMs, TimeUnit.MILLISECONDS);
 
@@ -368,7 +382,7 @@ public class TeamSpeakBot {
                 }
                 Channel channel = channelsByIds.get(client.getChannelId());
 
-                boolean cashMachineActive = !(client.isOutputMuted() || client.isOutputHardware()
+                boolean cashMachineActive = !(client.isOutputMuted() || !client.isOutputHardware()
                         || this.activityExcludingChannels.contains(client.getChannelId()));
                 boolean lotteryActive = cashMachineActive && !client.isAway() && !channel.hasPassword();
 

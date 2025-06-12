@@ -53,9 +53,10 @@ public class TeamSpeakDatabase {
                 "UPDATE " + config.getTablePrefix() + "_user" + " SET `lastMcName` = ? WHERE tsID = ? AND uuid = ?";
 
         this.addActiveTimeQuery = "INSERT INTO `" + config.getTablePrefix() + "_activeTimes`"
-                + " (uuid, time) VALUES (?, ?) ON DUPLICATE KEY UPDATE time = time + ?";
-        this.getActiveTimeQuery = "SELECT time FROM `" + config.getTablePrefix() + "_activeTimes`" + " WHERE uuid = ?";
-        this.getActiveTimesQuery = "SELECT uuid, time FROM `" + config.getTablePrefix() + "_activeTimes`";
+                + " (uuid, `time`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `time` = `time` + ?";
+        this.getActiveTimeQuery =
+                "SELECT `time` FROM `" + config.getTablePrefix() + "_activeTimes`" + " WHERE uuid = ?";
+        this.getActiveTimesQuery = "SELECT uuid, `time` FROM `" + config.getTablePrefix() + "_activeTimes`";
         this.clearActiveTimeQuery =
                 "DELETE FROM `" + this.config.getTablePrefix() + "_activeTimes`" + " WHERE uuid = ?";
         this.clearActiveTimesQuery = "DELETE FROM `" + this.config.getTablePrefix() + "_activeTimes`" + " WHERE 1";
@@ -67,6 +68,13 @@ public class TeamSpeakDatabase {
             smt.executeUpdate("CREATE TABLE IF NOT EXISTS " + this.config.getTablePrefix() + "_user" + " ("
                     + "`uuid` char(36)," + "`tsID` varchar(64)," + "`lastMcName` varchar(16)," + "PRIMARY KEY (`tsID`),"
                     + "INDEX (`uuid`)" + ")");
+            smt.close();
+            return null;
+        });
+        this.connection.runCommands((connection, sqlConnection) -> {
+            Statement smt = connection.createStatement();
+            smt.executeUpdate("CREATE TABLE IF NOT EXISTS `" + this.config.getTablePrefix() + "_activeTimes`" + " ("
+                    + "`uuid` char(36)," + "`time` BIGINT," + "PRIMARY KEY (`uuid`)" + ")");
             smt.close();
             return null;
         });
