@@ -55,6 +55,8 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.scheduler.ScheduledTask;
+import net.md_5.bungee.config.Configuration;
 import org.jetbrains.annotations.Nullable;
 
 public class TeamSpeakBot {
@@ -76,6 +78,8 @@ public class TeamSpeakBot {
     private Set<String> nonLinkedCache;
     private Map<UUID, Long> temporaryActiveTime;
     private long lastActivityCheck;
+    private ScheduledTask controlTask;
+    private ScheduledTask tidyUserCacheTask;
 
     private Integer newbieGroup;
     private Collection<Integer> ignoreGroups;
@@ -97,7 +101,7 @@ public class TeamSpeakBot {
         this.requests = new ConcurrentHashMap<>();
         this.groupIDs = new ConcurrentHashMap<>();
         Configuration rankConfig = plugin.getConfig().getSection("teamspeak.rankIDs");
-        rankConfig.getKeys().forEach(s -> groupIDs.put(s, rankConfig.getInt(s)));
+        rankConfig.getKeys().forEach(s -> this.groupIDs.put(s, rankConfig.getInt(s)));
 
         this.clientIdCache = new ConcurrentHashMap<>();
         this.userInfoCache = new ConcurrentHashMap<>();
@@ -113,7 +117,7 @@ public class TeamSpeakBot {
         this.lotteryChannels = new LinkedHashSet<>(plugin.getConfig().getIntList("teamspeak.lotteryChannels"));
         this.timePerLotteryTicket = plugin.getConfig().getLong("teamspeak.msPerLotteryTicket");
         this.maxLotteryTicketsByTime = plugin.getConfig().getInt("teamspeak.maxLotteryTicketsByTime");
-        this.lotteryChannelTickets = plugin.getConfig().getLong("teamspeak.lotteryChannelTickets");
+        this.lotteryChannelTickets = plugin.getConfig().getInt("teamspeak.lotteryChannelTickets");
 
         plugin.getProxy().getScheduler().schedule(plugin, () -> {
             connect();
@@ -295,7 +299,11 @@ public class TeamSpeakBot {
 
                 Long activeTimeLeft = TeamSpeakBot.this.temporaryActiveTime.remove(info.uuid());
                 if (activeTimeLeft != null && activeTimeLeft > 0) {
-                    TeamSpeakBot.this.database.addActiveTime(info.uuid(), activeTimeLeft);
+                    try {
+                        TeamSpeakBot.this.database.addActiveTime(info.uuid(), activeTimeLeft);
+                    } catch (SQLException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
             }
         });
@@ -312,27 +320,31 @@ public class TeamSpeakBot {
 
     private void initActivityControl() {
         this.lastActivityCheck = System.currentTimeMillis();
-        ScheduledTask controlTask = this.plugin.getProxy().getScheduler().schedule(this.plugin, () -> {
-            if (stopping) {
-                controlTask.cancel();
-                tidyCacheTask.cancel();
+        this.controlTask = this.plugin.getProxy().getScheduler().schedule(this.plugin, () -> {
+            if (this.stopping) {
+                this.controlTask.cancel();
+                this.tidyUserCacheTask.cancel();
             } else {
                 checkClientActivities();
             }
         }, 0, this.activityControlPeriodMs, TimeUnit.MILLISECONDS);
 
-        ScheduledTask tidyCacheTask = this.plugin.getProxy().getScheduler().schedule(this.plugin, () -> {
-            if (stopping) {
-                controlTask.cancel();
-                tidyCacheTask.cancel();
+        this.tidyUserCacheTask = this.plugin.getProxy().getScheduler().schedule(this.plugin, () -> {
+            if (this.stopping) {
+                this.controlTask.cancel();
+                this.tidyUserCacheTask.cancel();
             } else {
                 tidyUserInfoCache();
             }
         }, 5, 5, TimeUnit.MINUTES);
 
-        List<Client> clients = this.asyncApi.getClients().get();
-        for (Client client : clients) {
-            this.clientIdCache.put(client.getId(), client.getUniqueIdentifier());
+        try {
+            List<Client> clients = this.asyncApi.getClients().get();
+            for (Client client : clients) {
+                this.clientIdCache.put(client.getId(), client.getUniqueIdentifier());
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -341,48 +353,58 @@ public class TeamSpeakBot {
         long elapsed = now - this.lastActivityCheck;
         this.lastActivityCheck = now;
 
-        Set<UUID> cashMachineActiveUsers = new LinkedHashSet<>();
-        List<Client> clients = this.asyncApi.getClients().get();
-        List<Channel> channels = this.asyncApi.getChannels().get();
-        Map<Integer, Channel> channelsByIds =
-                channels.stream().collect(Collectors.toMap(Channel::getId, Function.identity()));
+        try {
+            Set<UUID> cashMachineActiveUsers = new LinkedHashSet<>();
+            List<Client> clients = this.asyncApi.getClients().get();
+            List<Channel> channels = this.asyncApi.getChannels().get();
 
-        for (Client client : clients) {
-            TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
-            if (info == null) {
-                continue;
-            }
-            Channel channel = channelsByIds.get(client.getChannelId());
+            Map<Integer, Channel> channelsByIds =
+                    channels.stream().collect(Collectors.toMap(Channel::getId, Function.identity()));
 
-            boolean cashMachineActive = !(client.isOutputMuted() || client.isOutputHardware()
-                    || this.activityExcludingChannels.contains(client.getChannelId()));
-            boolean lotteryActive = cashMachineActive && !client.isAway() && !channel.hasPassword();
+            for (Client client : clients) {
+                TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
+                if (info == null) {
+                    continue;
+                }
+                Channel channel = channelsByIds.get(client.getChannelId());
 
-            if (cashMachineActive) {
-                cashMachineActiveUsers.add(info.uuid());
-            }
-            if (lotteryActive) {
-                long newTime = this.temporaryActiveTime.compute(info.uuid(),
-                        (id, oldTime) -> oldTime == null ? elapsed : oldTime + elapsed);
-                if (newTime >= 5 * 60 * 1000) {
-                    this.database.addActiveTime(info.uuid(), newTime);
-                    this.temporaryActiveTime.put(info.uuid(), 0L);
+                boolean cashMachineActive = !(client.isOutputMuted() || client.isOutputHardware()
+                        || this.activityExcludingChannels.contains(client.getChannelId()));
+                boolean lotteryActive = cashMachineActive && !client.isAway() && !channel.hasPassword();
+
+                if (cashMachineActive) {
+                    cashMachineActiveUsers.add(info.uuid());
+                }
+                if (lotteryActive) {
+                    long newTime = this.temporaryActiveTime.compute(info.uuid(),
+                            (id, oldTime) -> oldTime == null ? elapsed : oldTime + elapsed);
+                    if (newTime >= 5 * 60 * 1000) {
+                        this.database.addActiveTime(info.uuid(), newTime);
+                        this.temporaryActiveTime.put(info.uuid(), 0L);
+                    }
                 }
             }
+            UtilsApi.getInstance().setGeneralData(TEAMSPEAK_ACTIVITY_KEY,
+                    cashMachineActiveUsers.stream().map(UUID::toString).collect(Collectors.joining(",")));
+
+        } catch (InterruptedException | SQLException e) {
+            throw new RuntimeException(e);
         }
-        UtilsApi.getInstance().setGeneralData(TEAMSPEAK_ACTIVITY_KEY,
-                cashMachineActiveUsers.stream().map(UUID::toString).collect(Collectors.joining(",")));
     }
 
     private void tidyUserInfoCache() {
-        this.nonLinkedCache.clear();
-        Iterator<TeamSpeakUserInfo> it = this.userInfoCache.values().iterator();
-        while (it.hasNext()) {
-            TeamSpeakUserInfo info = it.next();
-            Client client = this.asyncApi.getClientByUId(info.tsID()).get();
-            if (client == null) {
-                it.remove();
+        try {
+            this.nonLinkedCache.clear();
+            Iterator<TeamSpeakUserInfo> it = this.userInfoCache.values().iterator();
+            while (it.hasNext()) {
+                TeamSpeakUserInfo info = it.next();
+                Client client = this.asyncApi.getClientByUId(info.tsID()).get();
+                if (client == null) {
+                    it.remove();
+                }
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -582,37 +604,47 @@ public class TeamSpeakBot {
     }
 
     public UUID drawLottery() {
-        Map<UUID, Long> activeTimes = this.database.getActiveTimes();
-        Map<UUID, Integer> ticketsByUser = new LinkedHashMap<>(activeTimes.size());
-        for (Entry<UUID, Long> entry : activeTimes.entrySet()) {
-            int tickets = (int) Math.min(entry.getValue() / this.timePerLotteryTicket, this.maxLotteryTicketsByTime);
-            ticketsByUser.put(entry.getKey(), tickets);
-        }
+        try {
+            Map<UUID, Long> activeTimes = this.database.getActiveTimes();
+            Map<UUID, Integer> ticketsByUser = new LinkedHashMap<>(activeTimes.size());
+            for (Entry<UUID, Long> entry : activeTimes.entrySet()) {
+                int tickets =
+                        (int) Math.min(entry.getValue() / this.timePerLotteryTicket, this.maxLotteryTicketsByTime);
+                ticketsByUser.put(entry.getKey(), tickets);
+            }
 
-        for (Client client : this.asyncApi.getClients().get()) {
-            TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
-            if (info == null) {
-                continue;
+            for (Client client : this.asyncApi.getClients().get()) {
+                TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
+                if (info == null) {
+                    continue;
+                }
+                if (this.lotteryChannels.contains(client.getChannelId())) {
+                    ticketsByUser.compute(info.uuid(), (id, tickets) -> tickets == null ? this.lotteryChannelTickets
+                            : tickets + this.lotteryChannelTickets);
+                }
             }
-            if (this.lotteryChannels.contains(client.getChannelId())) {
-                ticketsByUser.compute(info.uuid(), (id, tickets) -> tickets == null ? this.lotteryChannelTickets
-                        : tickets + this.lotteryChannelTickets);
-            }
-        }
 
-        int totalTickets = ticketsByUser.values().stream().mapToInt(Integer::intValue).sum();
-        int winnerTicket = RandomUtil.SHARED_SECURE_RANDOM.nextInt(totalTickets);
-        int ticketNr = 0;
-        for (Entry<UUID, Integer> user : ticketsByUser.entrySet()) {
-            ticketNr += user.getValue();
-            if (ticketNr > winnerTicket) {
-                return user.getKey();
+            int totalTickets = ticketsByUser.values().stream().mapToInt(Integer::intValue).sum();
+            int winnerTicket = RandomUtil.SHARED_SECURE_RANDOM.nextInt(totalTickets);
+            int ticketNr = 0;
+            for (Entry<UUID, Integer> user : ticketsByUser.entrySet()) {
+                ticketNr += user.getValue();
+                if (ticketNr > winnerTicket) {
+                    return user.getKey();
+                }
             }
+            throw new RuntimeException(new AssertionError());
+        } catch (InterruptedException | SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
     public void resetLottery() {
-        this.database.clearActiveTimes();
+        try {
+            this.database.clearActiveTimes();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private TeamSpeakUserInfo getUserInfoCached(String tsId) {
@@ -625,6 +657,7 @@ public class TeamSpeakBot {
                 if (result == null) {
                     this.nonLinkedCache.add(id);
                 }
+                return result;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

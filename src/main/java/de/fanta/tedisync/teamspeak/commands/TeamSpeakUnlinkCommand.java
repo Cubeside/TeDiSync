@@ -8,6 +8,7 @@ import de.iani.cubesideutils.commands.ArgsParser;
 import java.sql.SQLException;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.plugin.Command;
 
 public class TeamSpeakUnlinkCommand extends SubCommand {
 
