@@ -369,6 +369,7 @@ public class TeamSpeakBot {
 
         try {
             Set<UUID> cashMachineActiveUsers = new LinkedHashSet<>();
+            Set<UUID> lotteryActiveUsers = new LinkedHashSet<>();
             List<Client> clients = this.asyncApi.getClients().get();
             List<Channel> channels = this.asyncApi.getChannels().get();
 
@@ -389,7 +390,7 @@ public class TeamSpeakBot {
                 if (cashMachineActive) {
                     cashMachineActiveUsers.add(info.uuid());
                 }
-                if (lotteryActive) {
+                if (lotteryActive && lotteryActiveUsers.add(info.uuid())) {
                     long newTime = this.temporaryActiveTime.compute(info.uuid(),
                             (id, oldTime) -> oldTime == null ? elapsed : oldTime + elapsed);
                     if (newTime >= 5 * 60 * 1000) {
