@@ -12,7 +12,7 @@ import net.md_5.bungee.api.plugin.Command;
 
 public class TeamSpeakUnlinkCommand extends SubCommand {
 
-    private final String DELETE_OTHER_ACCOUNTS_PERMISSION = "teamspeak.admin.deleteotheraccounts";
+    public static final String DELETE_OTHER_ACCOUNTS_PERMISSION = "teamspeak.admin.deleteotheraccounts";
     private final TeamSpeakBot teamSpeakBot;
 
     public TeamSpeakUnlinkCommand(TeamSpeakBot teamSpeakBot) {
@@ -43,7 +43,7 @@ public class TeamSpeakUnlinkCommand extends SubCommand {
                 this.teamSpeakBot.getDatabase().deleteAccountByTSID(teamSpeakUserInfo.tsID());
                 this.teamSpeakBot.userUnlinked(teamSpeakUserInfo);
                 ChatUtil.sendNormalMessage(player, "Du hast den Account " + teamSpeakUserInfo.tsID() + " entfernt!");
-            } else if (player.hasPermission(this.DELETE_OTHER_ACCOUNTS_PERMISSION)) {
+            } else if (player.hasPermission(TeamSpeakUnlinkCommand.DELETE_OTHER_ACCOUNTS_PERMISSION)) {
                 this.teamSpeakBot.getDatabase().deleteAccountByTSID(teamSpeakUserInfo.tsID());
                 ProxiedPlayer proxiedPlayer =
                         this.teamSpeakBot.getPlugin().getProxy().getPlayer(teamSpeakUserInfo.uuid());

@@ -25,5 +25,6 @@ public record TeamSpeakCommandRegistration(TeamSpeakBot teamSpeakBot) {
         commandRouter.addCommandMapping(new TeamSpeakLinkCommand(this.teamSpeakBot), "link");
         commandRouter.addCommandMapping(new TeamSpeakDrawLotteryCommand(this.teamSpeakBot), "drawlottery");
         commandRouter.addCommandMapping(new TeamSpeakResetLotteryCommand(this.teamSpeakBot), "resetLottery");
+        commandRouter.addCommandMapping(new TeamSpeakShowLotteryTicketsCommand(this.teamSpeakBot), "lotterytickets");
     }
 }

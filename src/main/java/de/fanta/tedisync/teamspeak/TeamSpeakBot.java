@@ -20,6 +20,7 @@ import de.fanta.tedisync.TeDiSync;
 import de.fanta.tedisync.teamspeak.commands.TeamSpeakCommandRegistration;
 import de.fanta.tedisync.utils.ChatUtil;
 import de.iani.cubesideutils.ComponentUtil;
+import de.iani.cubesideutils.Pair;
 import de.iani.cubesideutils.RandomUtil;
 import de.iani.cubesideutils.bungee.sql.SQLConfigBungee;
 import de.iani.cubesideutils.commands.ArgsParser;
@@ -694,6 +695,18 @@ public class TeamSpeakBot {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    public Pair<Long, Integer> getLotteryTimeAndTickets(UUID playerId) {
+        try {
+            synchronized (this.activityLock) {
+                long time = getDatabase().getActiveTime(playerId) + this.temporaryActiveTime.getOrDefault(playerId, 0L);
+                int tickets = (int) Math.min(time / this.timePerLotteryTicket, this.maxLotteryTicketsByTime);
+                return new Pair<>(time, tickets);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public TeamSpeakDatabase getDatabase() {
