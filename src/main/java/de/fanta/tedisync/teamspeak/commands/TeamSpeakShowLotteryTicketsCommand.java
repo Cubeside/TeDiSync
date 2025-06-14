@@ -60,7 +60,7 @@ public class TeamSpeakShowLotteryTicketsCommand extends SubCommand {
 
         Pair<Long, Integer> timeAndTickets = this.teamSpeakBot.getLotteryTimeAndTickets(playerId);
         ChatUtil.sendNormalMessage(sender,
-                userString + " hat " + StringUtil.formatTimespanClassic(timeAndTickets.first())
+                userString + " hat seit der letzten Ziehung " + StringUtil.formatTimespanClassic(timeAndTickets.first())
                         + " Aktivität und damit " + timeAndTickets.second() + " Lose.");
         return true;
     }
