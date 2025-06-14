@@ -14,7 +14,7 @@ import net.md_5.bungee.api.plugin.Command;
 
 public class TeamSpeakShowLotteryTicketsCommand extends SubCommand {
 
-    public static final String SEE_OTHER_TIMES_PERMISSION = "teamspeak.lottery.seeother";
+    public static final String SEE_OTHER_TIMES_PERMISSION = "tedisync.teamspeak.lottery.seeother";
 
     private final TeamSpeakBot teamSpeakBot;
 
@@ -60,8 +60,8 @@ public class TeamSpeakShowLotteryTicketsCommand extends SubCommand {
 
         Pair<Long, Integer> timeAndTickets = this.teamSpeakBot.getLotteryTimeAndTickets(playerId);
         ChatUtil.sendNormalMessage(sender,
-                userString + " hat " + StringUtil.formatTimespanClassic(timeAndTickets.first()) + " und damit "
-                        + timeAndTickets.second() + " Lose.");
+                userString + " hat " + StringUtil.formatTimespanClassic(timeAndTickets.first())
+                        + " Aktivität und damit " + timeAndTickets.second() + " Lose.");
         return true;
     }
 
