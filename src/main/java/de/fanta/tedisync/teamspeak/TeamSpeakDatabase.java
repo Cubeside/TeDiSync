@@ -183,7 +183,7 @@ public class TeamSpeakDatabase {
             smt.setString(1, uuid.toString());
 
             ResultSet rs = smt.executeQuery();
-            return rs.first() ? rs.getLong(1) : 0;
+            return rs.next() ? rs.getLong(1) : 0;
         });
     }
 
