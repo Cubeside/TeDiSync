@@ -44,7 +44,7 @@ public class TeamSpeakDrawLotteryCommand extends SubCommand {
 
     @Override
     public String getRequiredPermission() {
-        return "teamspeak.lottery";
+        return "tedisync.teamspeak.lottery";
     }
 
 }
