@@ -36,7 +36,7 @@ teamspeak:
   activityControlPeriodMs: 5000
   activityExcludingChannels: []
   lotteryChannels: []
-  msPerLotteryTicket: 25200000 # 7 * 60 * 60 * 1000 ms = 7 hours
+  msPerLotteryTicket: 3600000 # 1 * 60 * 60 * 1000 ms = 1 hours
   maxLotteryTicketsByTime: 7
   lotteryChannelTickets: 7
 discord:

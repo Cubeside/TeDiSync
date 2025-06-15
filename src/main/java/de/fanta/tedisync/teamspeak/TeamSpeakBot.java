@@ -411,11 +411,12 @@ public class TeamSpeakBot {
     private void tidyUserInfoCache() {
         try {
             this.nonLinkedCache.clear();
+            Set<String> onlineClientIds = this.asyncApi.getClients().get().stream().map(Client::getUniqueIdentifier)
+                    .collect(Collectors.toSet());
             Iterator<TeamSpeakUserInfo> it = this.userInfoCache.values().iterator();
             while (it.hasNext()) {
                 TeamSpeakUserInfo info = it.next();
-                Client client = this.asyncApi.getClientByUId(info.tsID()).get();
-                if (client == null) {
+                if (!onlineClientIds.contains(info.tsID())) {
                     it.remove();
                 }
             }
@@ -634,8 +635,6 @@ public class TeamSpeakBot {
                     ticketsByUser.put(entry.getKey(), tickets);
                 }
 
-                System.out.println("Tickets from time:" + ticketsByUser);
-
                 for (Client client : this.asyncApi.getClients().get()) {
                     TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
                     if (info == null) {
@@ -646,8 +645,6 @@ public class TeamSpeakBot {
                                 : tickets + this.lotteryChannelTickets);
                     }
                 }
-
-                System.out.println("Tickets total:" + ticketsByUser);
 
                 int totalTickets = ticketsByUser.values().stream().mapToInt(Integer::intValue).sum();
                 if (totalTickets == 0) {
