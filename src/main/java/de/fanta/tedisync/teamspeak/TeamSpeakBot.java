@@ -623,8 +623,18 @@ public class TeamSpeakBot {
     public UUID drawLottery() {
         synchronized (this.activityLock) {
             try {
+                Map<UUID, Integer> ticketsByUser = new LinkedHashMap<>();
+                for (Client client : this.asyncApi.getClients().get()) {
+                    TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
+                    if (info == null) {
+                        continue;
+                    }
+                    if (this.lotteryChannels.contains(client.getChannelId())) {
+                        ticketsByUser.put(info.uuid(), this.lotteryChannelTickets);
+                    }
+                }
+
                 Map<UUID, Long> activeTimes = this.database.getActiveTimes();
-                Map<UUID, Integer> ticketsByUser = new LinkedHashMap<>(activeTimes.size());
                 for (Entry<UUID, Long> entry : this.temporaryActiveTime.entrySet()) {
                     activeTimes.merge(entry.getKey(), entry.getValue(), (l1, l2) -> l1 + l2);
                 }
@@ -632,18 +642,7 @@ public class TeamSpeakBot {
                 for (Entry<UUID, Long> entry : activeTimes.entrySet()) {
                     int tickets =
                             (int) Math.min(entry.getValue() / this.timePerLotteryTicket, this.maxLotteryTicketsByTime);
-                    ticketsByUser.put(entry.getKey(), tickets);
-                }
-
-                for (Client client : this.asyncApi.getClients().get()) {
-                    TeamSpeakUserInfo info = getUserInfoCached(client.getUniqueIdentifier());
-                    if (info == null) {
-                        continue;
-                    }
-                    if (this.lotteryChannels.contains(client.getChannelId())) {
-                        ticketsByUser.compute(info.uuid(), (id, tickets) -> tickets == null ? this.lotteryChannelTickets
-                                : tickets + this.lotteryChannelTickets);
-                    }
+                    ticketsByUser.merge(entry.getKey(), tickets, (v1, v2) -> v1 + v2);
                 }
 
                 int totalTickets = ticketsByUser.values().stream().mapToInt(Integer::intValue).sum();
