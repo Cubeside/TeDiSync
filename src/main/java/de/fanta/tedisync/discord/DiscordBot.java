@@ -66,6 +66,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     private static Map<String, Giveaway> giveaways;
     private static Map<UUID, String> userEditGiveaway;
     private static ConcurrentHashMap<String, Long> groupIDs;
+    private volatile boolean shutdown;
 
 
     public DiscordBot(TeDiSync plugin) {
@@ -416,6 +417,9 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                 try {
                     member = guild.retrieveMemberById(discordUserInfo.dcID()).complete();
                 } catch (ErrorResponseException ex) {
+                    if (shutdown) {
+                        return; // ignore exceptions when shutting down
+                    }
                     if (ex.getErrorResponse() == ErrorResponse.UNKNOWN_MEMBER) {
                         // discord account does no longer exist - remove link
                         plugin.getLogger().log(Level.INFO, "Deleting discord link for no longer existing user: " + uuid + " -> " + discordUserInfo.dcID());
@@ -480,6 +484,9 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                     }
                 }
             } catch (InterruptedException | ExecutionException e) {
+                if (shutdown) {
+                    return; // ignore exceptions when shutting down
+                }
                 throw new RuntimeException(e);
             }
         });
@@ -502,6 +509,7 @@ public class DiscordBot extends ListenerAdapter implements Listener {
     }
 
     public void stopDiscordBot() {
+        shutdown = true;
         discordAPI.shutdownNow();
         database.disconnect();
     }

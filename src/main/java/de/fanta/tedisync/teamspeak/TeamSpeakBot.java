@@ -290,6 +290,9 @@ public class TeamSpeakBot {
             @Override
             public void onClientLeave(ClientLeaveEvent e) {
                 String clientId = TeamSpeakBot.this.clientIdCache.remove(e.getClientId());
+                if (clientId == null) {
+                    return;
+                }
                 if (clientId.equalsIgnoreCase("serveradmin")) {
                     return;
                 }
