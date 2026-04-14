@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -444,21 +445,26 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                     }
                 }
 
-                ArrayList<Group> userGroups = new ArrayList<>(lpUser.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, true).build()));
+                ArrayList<Group> userGroups = new ArrayList<>(lpUser.getInheritedGroups(QueryOptions.builder(QueryMode.NON_CONTEXTUAL).flag(Flag.RESOLVE_INHERITANCE, false).build()));
                 userGroups.sort((a, b) -> Integer.compare(b.getWeight().orElse(0), a.getWeight().orElse(0)));
-                String group = "default";
+                String defaultGroup = "default";
+                HashSet<Long> newUserGroupIDs = new HashSet<>();
                 for (Group g : userGroups) {
-                    if (groupIDs.containsKey(g.getName())) {
-                        group = g.getName();
-                        break;
+                    Long dcGroupId = groupIDs.get(g.getName());
+                    if (dcGroupId != null) {
+                        newUserGroupIDs.add(dcGroupId);
                     }
                 }
-                long groupID = groupIDs.get(group);
+                Long dcGroupId = groupIDs.get(defaultGroup);
+                if (dcGroupId != null) {
+                    newUserGroupIDs.add(dcGroupId);
+                }
+
                 long[] ranks = member.getRoles().stream().mapToLong(ISnowflake::getIdLong).toArray();
                 List<Long> dcUserRanks = Arrays.stream(ranks).boxed().toList();
 
                 for (Long userRank : dcUserRanks) {
-                    if (groupIDs.containsValue(userRank) && userRank != groupID) {
+                    if (groupIDs.containsValue(userRank) && !newUserGroupIDs.contains(userRank)) {
                         Role role = guild.getRoleById(userRank);
                         if (role == null) {
                             return;
@@ -468,18 +474,12 @@ public class DiscordBot extends ListenerAdapter implements Listener {
                         }
                     }
                 }
-
-                if (!dcUserRanks.contains(groupID)) {
-                    Role role = guild.getRoleById(groupID);
-                    if (role == null) {
-                        return;
-                    }
-                    guild.addRoleToMember(member, role).queue();
-                }
-
-                if (register) {
-                    Role role = guild.getRoleById(groupIDs.get("default"));
-                    if (role != null) {
+                for (long groupID : newUserGroupIDs) {
+                    if (!dcUserRanks.contains(groupID)) {
+                        Role role = guild.getRoleById(groupID);
+                        if (role == null) {
+                            return;
+                        }
                         guild.addRoleToMember(member, role).queue();
                     }
                 }
