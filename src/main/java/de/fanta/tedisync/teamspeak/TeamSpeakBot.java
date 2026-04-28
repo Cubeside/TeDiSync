@@ -252,6 +252,7 @@ public class TeamSpeakBot {
                         }
 
                         try {
+                            boolean justRemovedGroups = false;
                             TeamSpeakUserInfo teamSpeakUserInfo =
                                     TeamSpeakBot.this.database.getUserByTSID(client.getUniqueIdentifier());
                             if (teamSpeakUserInfo != null) {
@@ -261,13 +262,16 @@ public class TeamSpeakBot {
                                 TeamSpeakBot.this.userInfoCache.remove(client.getUniqueIdentifier());
                                 TeamSpeakBot.this.nonLinkedCache.add(client.getUniqueIdentifier());
                                 removeAllTeamSpeakGroups(client.getUniqueIdentifier());
+                                justRemovedGroups = true;
                             }
 
                             boolean hasGroup = false;
-                            for (int serverGroup : client.getServerGroups()) {
-                                if (TeamSpeakBot.this.groupIDs.containsValue(serverGroup)) {
-                                    hasGroup = true;
-                                    break;
+                            if (!justRemovedGroups) {
+                                for (int serverGroup : client.getServerGroups()) {
+                                    if (TeamSpeakBot.this.groupIDs.containsValue(serverGroup)) {
+                                        hasGroup = true;
+                                        break;
+                                    }
                                 }
                             }
                             if (!hasGroup && !hasIgnoreGroup(client)) {
