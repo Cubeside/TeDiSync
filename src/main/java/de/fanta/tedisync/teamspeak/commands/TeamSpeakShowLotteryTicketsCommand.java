@@ -1,7 +1,9 @@
 package de.fanta.tedisync.teamspeak.commands;
 
+import de.fanta.tedisync.PlayerWithId;
 import de.fanta.tedisync.teamspeak.TeamSpeakBot;
 import de.fanta.tedisync.utils.ChatUtil;
+import de.fanta.tedisync.utils.NameResolver;
 import de.iani.cubesideutils.Pair;
 import de.iani.cubesideutils.StringUtil;
 import de.iani.cubesideutils.bungee.commands.SubCommand;
@@ -10,7 +12,6 @@ import java.util.UUID;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
-
 
 public class TeamSpeakShowLotteryTicketsCommand extends SubCommand {
 
@@ -40,19 +41,14 @@ public class TeamSpeakShowLotteryTicketsCommand extends SubCommand {
                 return true;
             }
 
-            try {
-                playerId = UUID.fromString(userString);
-            } catch (IllegalArgumentException e) {
-                ProxiedPlayer player = this.teamSpeakBot.getPlugin().getProxy().getPlayer(userString);
-                if (player != null) {
-                    playerId = player.getUniqueId();
-                    userString = player.getName();
-                } else {
-                    ChatUtil.sendWarningMessage(sender, "Spieler \"" + userString
-                            + "\" nicht gefunden (nicht-online Spieler können nur über UUID angegeben werden).");
-                    return true;
-                }
+            PlayerWithId target = NameResolver.getPlayer(userString);
+            if (target == null) {
+                ChatUtil.sendWarningMessage(sender, "Spieler \"" + userString + "\" nicht gefunden.");
+                return true;
             }
+
+            playerId = target.id();
+            userString = target.name();
         } else {
             playerId = player.getUniqueId();
             userString = player.getName();
