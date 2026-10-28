@@ -2,6 +2,8 @@ package de.fanta.tedisync;
 
 import de.fanta.tedisync.discord.DiscordBot;
 import de.fanta.tedisync.teamspeak.TeamSpeakBot;
+import de.fanta.tedisync.api.TeamSpeakApi;
+import de.fanta.tedisync.teamspeak.QueryTeamSpeakApi;
 import de.fanta.tedisync.utils.ChatUtil;
 import net.luckperms.api.LuckPerms;
 import net.md_5.bungee.api.plugin.Plugin;
@@ -25,7 +27,8 @@ public final class TeDiSync extends Plugin {
     private Configuration config;
 
     private static ConcurrentSkipListSet<UUID> updatePlayers;
-    private TeamSpeakBot teamSpeakBot;
+    private volatile TeamSpeakBot teamSpeakBot;
+    private final TeamSpeakApi teamSpeakApi = new QueryTeamSpeakApi(() -> teamSpeakBot == null ? null : teamSpeakBot.readyQuery());
     private DiscordBot discordBot;
 
     @Override
@@ -104,5 +107,10 @@ public final class TeDiSync extends Plugin {
 
     public TeamSpeakBot getTeamSpeakBot() {
         return teamSpeakBot;
+    }
+
+    /** Available even when TeamSpeak is disabled; operations then fail asynchronously. */
+    public TeamSpeakApi getTeamSpeakApi() {
+        return teamSpeakApi;
     }
 }

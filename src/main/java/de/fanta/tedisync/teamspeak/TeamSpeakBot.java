@@ -70,8 +70,9 @@ public class TeamSpeakBot {
 
     private TeamSpeakDatabase database;
     private ConcurrentHashMap<UUID, String> requests;
-    private TS3ApiAsync asyncApi;
-    private TS3Query query;
+    private volatile TS3ApiAsync asyncApi;
+    private volatile TS3Query query;
+    private volatile boolean queryReady;
     private ConcurrentHashMap<String, Integer> groupIDs;
 
     private Object activityLock = new Object();
@@ -152,6 +153,7 @@ public class TeamSpeakBot {
 
             @Override
             public void onDisconnect(TS3Query ts3Query) {
+                queryReady = false;
                 TeamSpeakBot.this.plugin.getLogger().info("TeamSpeakBot:onDisconnect");
             }
 
@@ -161,7 +163,7 @@ public class TeamSpeakBot {
                 api.selectVirtualServerByPort(port);
                 api.setNickname(query_displayname);
                 api.registerAllEvents();
-
+                queryReady = true;
             }
         });
 
@@ -320,8 +322,9 @@ public class TeamSpeakBot {
 
     public void stopTeamSpeakBot() {
         this.stopping = true;
+        queryReady = false;
         synchronized (this.activityLock) {
-            if (this.query.isConnected()) {
+            if (this.query != null && this.query.isConnected()) {
                 this.asyncApi.logout();
                 this.query.exit();
             }
@@ -336,6 +339,11 @@ public class TeamSpeakBot {
                 this.database.disconnect();
             }
         }
+    }
+
+    public TS3ApiAsync readyQuery() {
+        TS3Query current = query;
+        return !stopping && queryReady && current != null && current.isConnected() ? asyncApi : null;
     }
 
     private void initActivityControl() {
